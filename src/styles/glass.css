@@ -1,0 +1,374 @@
+/**
+ * Glass Effects - Market Depth Cinema
+ *
+ * Glassmorphism components with backdrop blur, subtle borders, and layered depth.
+ * Each class builds upon the foundation to create a cohesive visual language.
+ */
+
+/* ==========================================
+   BASE GLASS PANEL
+   ========================================== */
+
+/**
+ * The fundamental glass surface: semi-transparent, frosted blur, delicate border.
+ * Use for primary content containers.
+ */
+.glass-panel {
+  position: relative;
+  background: var(--glass-bg-base);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border: 1px solid var(--glass-border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-all);
+  overflow: hidden;
+}
+
+/* Subtle lift on hover - breathing life into static panels */
+.glass-panel:hover {
+  border-color: var(--glass-border-color-bright);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ==========================================
+   ELEVATED GLASS PANEL
+   ========================================== */
+
+/**
+ * More prominent glass with heavier blur and deeper opacity.
+ * Use for modal overlays, important notifications, or floating controls.
+ */
+.glass-panel-elevated {
+  position: relative;
+  background: var(--glass-bg-elevated);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  border: 1px solid var(--glass-border-color-bright);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transition: var(--transition-all);
+  overflow: hidden;
+}
+
+.glass-panel-elevated:hover {
+  box-shadow: var(--shadow-xl);
+}
+
+/* ==========================================
+   GLASS CARD
+   ========================================== */
+
+/**
+ * Glass card with gradient overlay for extra visual interest.
+ * Perfect for event markers, stats cards, or grouped information.
+ */
+.glass-card {
+  position: relative;
+  background: var(--glass-bg-base);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border: 1px solid var(--glass-border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-all);
+  overflow: hidden;
+}
+
+/* Gradient overlay adds dimensionality */
+.glass-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.05) 0%,
+    rgba(139, 92, 246, 0.05) 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-base) var(--ease-out);
+}
+
+.glass-card:hover::after {
+  opacity: 1;
+}
+
+.glass-card:hover {
+  border-color: var(--glass-border-color-bright);
+  box-shadow:
+    var(--shadow-md),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  will-change: transform, box-shadow;
+}
+
+/* Active state - subtle press down effect */
+.glass-card:active {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  transition:
+    all 100ms var(--ease-in);
+}
+
+/* ==========================================
+   GLASS INNER GLOW
+   ========================================== */
+
+/**
+ * Inner glow effect creates depth by simulating light emanating from within.
+ * Apply to panels that contain important data or active states.
+ */
+.glass-inner-glow {
+  position: relative;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.05),
+    var(--shadow-md);
+}
+
+.glass-inner-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(59, 130, 246, 0.08) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ==========================================
+   GLASS HIGHLIGHT
+   ========================================== */
+
+/**
+ * Subtle highlight on top edge using pseudo-element.
+ * Simulates light catching the upper rim of the glass surface.
+ */
+.glass-highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--glass-highlight);
+  pointer-events: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* ==========================================
+   SHIMMER ANIMATION
+   ========================================== */
+
+/**
+ * Animated shimmer effect for progress bars and loading states.
+ * Creates a sweeping light reflection across the surface.
+ */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.glass-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ==========================================
+   GLASS GRADIENT BORDER
+   ========================================== */
+
+/**
+ * Animated gradient border effect.
+ * The border flows with color, creating dynamic visual interest.
+ */
+@keyframes border-flow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.glass-gradient-border {
+  position: relative;
+  background: var(--glass-bg-base);
+  backdrop-filter: blur(var(--glass-blur-md));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+/* Create gradient border using pseudo-element */
+.glass-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.3) 0%,
+    rgba(139, 92, 246, 0.3) 50%,
+    rgba(59, 130, 246, 0.3) 100%
+  );
+  background-size: 200% 200%;
+  border-radius: inherit;
+  z-index: -1;
+  animation: border-flow 4s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+/* Inner mask to create border effect */
+.glass-gradient-border::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: inherit;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+/* Ensure content stays above the gradient effects */
+.glass-gradient-border > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================
+   GLASS DIVIDER
+   ========================================== */
+
+/**
+ * Subtle divider line with glass aesthetic.
+ * Use to separate sections within glass panels.
+ */
+.glass-divider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--glass-border-color-bright) 50%,
+    transparent 100%
+  );
+  margin: var(--spacing-md) 0;
+}
+
+/* ==========================================
+   GLASS CONTENT WRAPPER
+   ========================================== */
+
+/**
+ * Content wrapper that ensures proper padding inside glass panels.
+ * Keeps content visually balanced with breathing room.
+ */
+.glass-content {
+  padding: var(--spacing-lg);
+  position: relative;
+  z-index: 1;
+}
+
+.glass-content-sm {
+  padding: var(--spacing-md);
+  position: relative;
+  z-index: 1;
+}
+
+.glass-content-lg {
+  padding: var(--spacing-xl);
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================
+   GLASS OVERLAY
+   ========================================== */
+
+/**
+ * Full-screen glass overlay for modals and overlays.
+ * Creates depth separation between foreground and background content.
+ */
+.glass-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 3, 5, 0.7);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  z-index: var(--z-modal);
+  animation: fade-in var(--transition-base) var(--ease-out);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ==========================================
+   GLASS STATUS VARIANTS
+   ========================================== */
+
+/**
+ * Glass panels with colored accents for different states.
+ * Border color indicates state while maintaining glass aesthetic.
+ */
+.glass-success {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.glass-success:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: var(--shadow-glow-bid);
+}
+
+.glass-error {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.glass-error:hover {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: var(--shadow-glow-ask);
+}
+
+.glass-warning {
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.glass-warning:hover {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: var(--shadow-glow-mid);
+}
+
+.glass-primary {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.glass-primary:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: var(--shadow-glow-primary);
+}

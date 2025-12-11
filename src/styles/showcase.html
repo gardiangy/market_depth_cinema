@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Depth Cinema - Design System Showcase</title>
+  <link rel="stylesheet" href="./tokens.css">
+  <link rel="stylesheet" href="./glass.css">
+  <link rel="stylesheet" href="./buttons.css">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--surface-base);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, sans-serif;
+      padding: var(--spacing-2xl);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(59, 130, 246, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 60%);
+      background-size: 200% 200%;
+      animation: gradient-drift 20s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes gradient-drift {
+      0%, 100% { background-position: 0% 50%; }
+      33% { background-position: 100% 50%; }
+      66% { background-position: 50% 100%; }
+    }
+
+    .showcase-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .showcase-section {
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .showcase-title {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-lg);
+      color: var(--text-primary);
+    }
+
+    .showcase-subtitle {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-md);
+      color: var(--text-secondary);
+    }
+
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    .showcase-demo {
+      padding: var(--spacing-lg);
+    }
+
+    .button-demo {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .color-swatch {
+      width: 100px;
+      height: 100px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      border: 1px solid var(--glass-border-color);
+    }
+
+    .shadow-demo {
+      width: 120px;
+      height: 120px;
+      background: var(--glass-bg-elevated);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-sm);
+      text-align: center;
+    }
+
+    .icon {
+      width: 1em;
+      height: 1em;
+      display: inline-block;
+    }
+
+    code {
+      background: var(--surface-3);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="showcase-container">
+    <header style="margin-bottom: var(--spacing-2xl);">
+      <h1 style="font-size: 3rem; margin-bottom: var(--spacing-sm);">Market Depth Cinema</h1>
+      <p style="font-size: var(--font-size-lg); color: var(--text-secondary);">
+        Design System Showcase - Phase 1: Foundation
+      </p>
+    </header>
+
+    <!-- Glass Panels -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">Glass Panels</h2>
+
+      <div class="showcase-grid">
+        <div class="glass-panel">
+          <div class="glass-content">
+            <h3 class="showcase-subtitle">Glass Panel</h3>
+            <p style="color: var(--text-secondary);">
+              Base glass panel with backdrop blur and subtle border. Perfect for content containers.
+            </p>
+            <code>.glass-panel</code>
+          </div>
+        </div>
+
+        <div class="glass-panel-elevated">
+          <div class="glass-content">
+            <h3 class="showcase-subtitle">Elevated Panel</h3>
+            <p style="color: var(--text-secondary);">
+              More prominent glass with heavier blur. Use for modals and overlays.
+            </p>
+            <code>.glass-panel-elevated</code>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="glass-content-sm">
+            <h3 class="showcase-subtitle">Glass Card</h3>
+            <p style="color: var(--text-secondary);">
+              Card with gradient overlay on hover. Great for event markers.
+            </p>
+            <code>.glass-card</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="glass-panel glass-inner-glow">
+          <div class="glass-content-sm">
+            <h3 class="showcase-subtitle">Inner Glow</h3>
+            <p style="color: var(--text-secondary);">
+              Depth effect with light from within.
+            </p>
+            <code>.glass-inner-glow</code>
+          </div>
+        </div>
+
+        <div class="glass-panel glass-highlight">
+          <div class="glass-content-sm">
+            <h3 class="showcase-subtitle">Highlight</h3>
+            <p style="color: var(--text-secondary);">
+              Top edge shimmer catches the light.
+            </p>
+            <code>.glass-highlight</code>
+          </div>
+        </div>
+
+        <div class="glass-gradient-border">
+          <div class="glass-content-sm">
+            <h3 class="showcase-subtitle">Gradient Border</h3>
+            <p style="color: var(--text-secondary);">
+              Animated flowing border.
+            </p>
+            <code>.glass-gradient-border</code>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="showcase-subtitle" style="margin-top: var(--spacing-xl);">Status Variants</h3>
+      <div class="showcase-grid">
+        <div class="glass-panel glass-success">
+          <div class="glass-content-sm">
+            <h4 style="color: var(--color-bid-bright);">Success</h4>
+            <code>.glass-success</code>
+          </div>
+        </div>
+
+        <div class="glass-panel glass-error">
+          <div class="glass-content-sm">
+            <h4 style="color: var(--color-ask-bright);">Error</h4>
+            <code>.glass-error</code>
+          </div>
+        </div>
+
+        <div class="glass-panel glass-warning">
+          <div class="glass-content-sm">
+            <h4 style="color: var(--color-mid-bright);">Warning</h4>
+            <code>.glass-warning</code>
+          </div>
+        </div>
+
+        <div class="glass-panel glass-primary">
+          <div class="glass-content-sm">
+            <h4 style="color: var(--color-primary-bright);">Primary</h4>
+            <code>.glass-primary</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Buttons -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">Button System</h2>
+
+      <div class="glass-panel">
+        <div class="glass-content">
+          <h3 class="showcase-subtitle">Button Variants</h3>
+
+          <div class="button-demo">
+            <button class="btn btn-ghost btn-md">Ghost</button>
+            <button class="btn btn-subtle btn-md">Subtle</button>
+            <button class="btn btn-primary btn-md">Primary</button>
+            <button class="btn btn-success btn-md">Success</button>
+            <button class="btn btn-danger btn-md">Danger</button>
+            <button class="btn btn-primary btn-md" disabled>Disabled</button>
+          </div>
+
+          <div class="glass-divider"></div>
+
+          <h3 class="showcase-subtitle">Button Sizes</h3>
+          <div class="button-demo">
+            <button class="btn btn-primary btn-sm">Small</button>
+            <button class="btn btn-primary btn-md">Medium</button>
+            <button class="btn btn-primary btn-lg">Large</button>
+          </div>
+
+          <div class="glass-divider"></div>
+
+          <h3 class="showcase-subtitle">Icon Buttons</h3>
+          <div class="button-demo">
+            <button class="btn btn-ghost btn-icon-sm">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+            <button class="btn btn-subtle btn-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+            <button class="btn btn-primary btn-icon-lg">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="glass-divider"></div>
+
+          <h3 class="showcase-subtitle">Playback Controls</h3>
+          <div class="button-demo">
+            <button class="btn btn-playback">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              Play
+            </button>
+            <button class="btn btn-playback playing">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+              </svg>
+              Pause
+            </button>
+          </div>
+
+          <div class="glass-divider"></div>
+
+          <h3 class="showcase-subtitle">Button Group</h3>
+          <div class="btn-group">
+            <button class="btn btn-subtle">0.5x</button>
+            <button class="btn btn-subtle active">1x</button>
+            <button class="btn btn-subtle">2x</button>
+            <button class="btn btn-subtle">5x</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Color Palette -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">Color Palette</h2>
+
+      <div class="glass-panel">
+        <div class="glass-content">
+          <h3 class="showcase-subtitle">Trading Colors</h3>
+          <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+            <div class="color-swatch" style="background: var(--color-bid);">
+              Bid<br/>#10b981
+            </div>
+            <div class="color-swatch" style="background: var(--color-ask);">
+              Ask<br/>#ef4444
+            </div>
+            <div class="color-swatch" style="background: var(--color-mid);">
+              Mid<br/>#fbbf24
+            </div>
+            <div class="color-swatch" style="background: var(--color-primary);">
+              Primary<br/>#3b82f6
+            </div>
+            <div class="color-swatch" style="background: var(--color-secondary);">
+              Secondary<br/>#8b5cf6
+            </div>
+          </div>
+
+          <div class="glass-divider"></div>
+
+          <h3 class="showcase-subtitle">Surface Colors</h3>
+          <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+            <div class="color-swatch" style="background: var(--surface-base);">
+              Base<br/>#030305
+            </div>
+            <div class="color-swatch" style="background: var(--surface-1);">
+              Surface 1<br/>#0a0a0f
+            </div>
+            <div class="color-swatch" style="background: var(--surface-2);">
+              Surface 2<br/>#121218
+            </div>
+            <div class="color-swatch" style="background: var(--surface-3);">
+              Surface 3<br/>#1a1a22
+            </div>
+            <div class="color-swatch" style="background: var(--surface-4);">
+              Surface 4<br/>#22222e
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shadows -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">Shadow System</h2>
+
+      <div class="glass-panel">
+        <div class="glass-content">
+          <div style="display: flex; gap: var(--spacing-xl); flex-wrap: wrap; justify-content: space-around;">
+            <div class="shadow-demo" style="box-shadow: var(--shadow-sm);">
+              Shadow SM
+            </div>
+            <div class="shadow-demo" style="box-shadow: var(--shadow-md);">
+              Shadow MD
+            </div>
+            <div class="shadow-demo" style="box-shadow: var(--shadow-lg);">
+              Shadow LG
+            </div>
+            <div class="shadow-demo" style="box-shadow: var(--shadow-glow-primary);">
+              Glow Primary
+            </div>
+            <div class="shadow-demo" style="box-shadow: var(--shadow-glow-bid);">
+              Glow Bid
+            </div>
+            <div class="shadow-demo" style="box-shadow: var(--shadow-glow-ask);">
+              Glow Ask
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Animations -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">Animations</h2>
+
+      <div class="showcase-grid">
+        <div class="glass-panel glass-shimmer">
+          <div class="glass-content">
+            <h3 class="showcase-subtitle">Shimmer Effect</h3>
+            <p style="color: var(--text-secondary);">
+              Animated light sweep for progress bars.
+            </p>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="glass-content-sm">
+            <h3 class="showcase-subtitle">Hover Me!</h3>
+            <p style="color: var(--text-secondary);">
+              Glass card with hover lift effect.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Typography -->
+    <section class="showcase-section">
+      <h2 class="showcase-title">Typography</h2>
+
+      <div class="glass-panel">
+        <div class="glass-content">
+          <h1 style="margin-bottom: var(--spacing-sm);">Heading 1</h1>
+          <h2 style="margin-bottom: var(--spacing-sm);">Heading 2</h2>
+          <h3 style="margin-bottom: var(--spacing-sm);">Heading 3</h3>
+          <h4 style="margin-bottom: var(--spacing-sm);">Heading 4</h4>
+
+          <div class="glass-divider"></div>
+
+          <p style="color: var(--text-primary); margin-bottom: var(--spacing-sm);">
+            Primary text - High contrast for main content (95% white)
+          </p>
+          <p style="color: var(--text-secondary); margin-bottom: var(--spacing-sm);">
+            Secondary text - Medium contrast for supporting content (70% white)
+          </p>
+          <p style="color: var(--text-tertiary); margin-bottom: var(--spacing-sm);">
+            Tertiary text - Low contrast for metadata (50% white)
+          </p>
+          <p style="color: var(--text-disabled);">
+            Disabled text - Very low contrast (30% white)
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <footer style="margin-top: var(--spacing-2xl); text-align: center; color: var(--text-tertiary);">
+      <p>Market Depth Cinema Design System - Phase 1: Foundation</p>
+      <p style="margin-top: var(--spacing-sm);">Glassmorphism meets cinematic dark aesthetics</p>
+    </footer>
+  </div>
+</body>
+</html>

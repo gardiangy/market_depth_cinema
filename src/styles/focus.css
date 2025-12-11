@@ -1,0 +1,185 @@
+/**
+ * Focus Ring Utilities - Market Depth Cinema
+ *
+ * Accessible, beautiful focus indicators for keyboard navigation.
+ * Only visible during keyboard interaction (:focus-visible), not mouse clicks.
+ */
+
+/* ==========================================
+   BASE FOCUS RING
+   ========================================== */
+
+/**
+ * Primary focus ring with subtle glow.
+ * Use for most interactive elements (buttons, links, inputs).
+ */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.15),
+    0 0 8px rgba(59, 130, 246, 0.2);
+  transition:
+    outline var(--transition-base) var(--ease-out),
+    box-shadow var(--transition-base) var(--ease-out);
+}
+
+/* ==========================================
+   FOCUS RING VARIANTS
+   ========================================== */
+
+/**
+ * Success focus ring - for affirmative actions.
+ * Use on "Go Live", "Record", "Save" buttons.
+ */
+.focus-ring-success:focus-visible {
+  outline: 2px solid var(--color-bid);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 4px rgba(16, 185, 129, 0.15),
+    0 0 8px rgba(16, 185, 129, 0.2);
+  transition:
+    outline var(--transition-base) var(--ease-out),
+    box-shadow var(--transition-base) var(--ease-out);
+}
+
+/**
+ * Danger focus ring - for destructive actions.
+ * Use on "Stop Recording", "Delete", "Cancel" buttons.
+ */
+.focus-ring-danger:focus-visible {
+  outline: 2px solid var(--color-ask);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 4px rgba(239, 68, 68, 0.15),
+    0 0 8px rgba(239, 68, 68, 0.2);
+  transition:
+    outline var(--transition-base) var(--ease-out),
+    box-shadow var(--transition-base) var(--ease-out);
+}
+
+/**
+ * Subtle focus ring - for glass elements in dense layouts.
+ * Less prominent, more refined for minimal distraction.
+ */
+.focus-ring-subtle:focus-visible {
+  outline: 1px solid var(--glass-border-color-bright);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+  transition:
+    outline var(--transition-base) var(--ease-out),
+    box-shadow var(--transition-base) var(--ease-out);
+}
+
+/**
+ * Inset focus ring - for input fields and text areas.
+ * Ring appears inside the element rather than outside.
+ */
+.focus-ring-inset:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--color-primary),
+    inset 0 0 0 4px rgba(59, 130, 246, 0.15),
+    0 0 8px rgba(59, 130, 246, 0.2);
+  border-color: var(--color-primary);
+  transition:
+    box-shadow var(--transition-base) var(--ease-out),
+    border-color var(--transition-base) var(--ease-out);
+}
+
+/* ==========================================
+   FOCUS WITHIN - CONTAINER STATES
+   ========================================== */
+
+/**
+ * Container focus glow - parent element highlights when child is focused.
+ * Use on form groups, card containers with focusable elements.
+ */
+.focus-within-glow:focus-within {
+  border-color: var(--glass-border-color-bright);
+  box-shadow: var(--shadow-glow-primary);
+  transition:
+    border-color var(--transition-base) var(--ease-out),
+    box-shadow var(--transition-base) var(--ease-out);
+}
+
+/* ==========================================
+   ACCESSIBILITY - REDUCED MOTION
+   ========================================== */
+
+/**
+ * Respect user preferences for reduced motion.
+ * Remove transitions and animations when requested.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .focus-ring:focus-visible,
+  .focus-ring-success:focus-visible,
+  .focus-ring-danger:focus-visible,
+  .focus-ring-subtle:focus-visible,
+  .focus-ring-inset:focus-visible,
+  .focus-within-glow:focus-within {
+    transition: none;
+  }
+}
+
+/* ==========================================
+   SKIP TO CONTENT LINK
+   ========================================== */
+
+/**
+ * Skip link for screen reader users and keyboard navigation.
+ * Hidden until focused, then prominently displayed.
+ */
+.skip-link {
+  position: absolute;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  z-index: var(--z-tooltip);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--glass-bg-elevated);
+  backdrop-filter: blur(var(--glass-blur-lg));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-200%);
+  transition:
+    transform var(--transition-base) var(--ease-out),
+    opacity var(--transition-base) var(--ease-out);
+  opacity: 0;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ==========================================
+   FOCUS VISIBLE POLYFILL
+   ========================================== */
+
+/**
+ * Remove default focus styling when not using keyboard.
+ * :focus-visible is well-supported, but this ensures consistency.
+ */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/**
+ * Ensure critical interactive elements always have a visible focus state.
+ * Even if custom focus-ring is not applied, provide basic outline.
+ */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
