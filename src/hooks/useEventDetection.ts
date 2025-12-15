@@ -14,13 +14,62 @@ interface EventDetectionConfig {
   updateSignificantLevelsInterval?: number; // milliseconds, default 30000 (30s)
 }
 
+const SNAPSHOT_HISTORY_SIZE = 100;
+
+class SnapshotHistoryBuffer {
+  private buffer: (OrderbookSnapshot | null)[];
+  private head: number = 0;
+  private size: number = 0;
+  private readonly capacity: number;
+
+  constructor(capacity: number = SNAPSHOT_HISTORY_SIZE) {
+    this.capacity = capacity;
+    this.buffer = new Array(capacity).fill(null);
+  }
+
+  push(snapshot: OrderbookSnapshot): void {
+    this.buffer[this.head] = snapshot;
+    this.head = (this.head + 1) % this.capacity;
+    if (this.size < this.capacity) {
+      this.size++;
+    }
+  }
+
+  getAll(): OrderbookSnapshot[] {
+    if (this.size === 0) return [];
+
+    const result: OrderbookSnapshot[] = [];
+    const startIndex = this.size < this.capacity ? 0 : this.head;
+
+    for (let i = 0; i < this.size; i++) {
+      const index = (startIndex + i) % this.capacity;
+      const snapshot = this.buffer[index];
+      if (snapshot) {
+        result.push(snapshot);
+      }
+    }
+
+    return result;
+  }
+
+  clear(): void {
+    this.buffer = new Array(this.capacity).fill(null);
+    this.head = 0;
+    this.size = 0;
+  }
+
+  getSize(): number {
+    return this.size;
+  }
+}
+
 export function useEventDetection(
   currentSnapshot: OrderbookSnapshot | null,
   config: EventDetectionConfig = { enabled: true }
 ) {
   const workerRef = useRef<Worker | null>(null);
   const previousSnapshotRef = useRef<OrderbookSnapshot | null>(null);
-  const snapshotHistoryRef = useRef<OrderbookSnapshot[]>([]);
+  const snapshotHistoryRef = useRef<SnapshotHistoryBuffer>(new SnapshotHistoryBuffer());
   const lastSignificantLevelsUpdateRef = useRef<number>(0);
 
   const addEvents = useEventsStore((state) => state.addEvents);
@@ -96,12 +145,8 @@ export function useEventDetection(
       // Update refs
       previousSnapshotRef.current = snapshot;
 
-      // Maintain snapshot history for significant levels calculation
+      // Add to circular buffer (O(1) instead of O(n) shift)
       snapshotHistoryRef.current.push(snapshot);
-      // Keep last 100 snapshots (~10 seconds at 100ms intervals)
-      if (snapshotHistoryRef.current.length > 100) {
-        snapshotHistoryRef.current.shift();
-      }
     },
     [enabled]
   );
@@ -116,11 +161,11 @@ export function useEventDetection(
     const timeSinceLastUpdate = now - lastSignificantLevelsUpdateRef.current;
 
     if (timeSinceLastUpdate >= updateSignificantLevelsInterval) {
-      if (snapshotHistoryRef.current.length > 0) {
+      if (snapshotHistoryRef.current.getSize() > 0) {
         workerRef.current.postMessage({
           type: 'updateSignificantLevels',
           data: {
-            snapshots: snapshotHistoryRef.current,
+            snapshots: snapshotHistoryRef.current.getAll(),
           },
         });
 
@@ -147,7 +192,7 @@ export function useEventDetection(
       workerRef.current.postMessage({ type: 'reset' });
     }
     previousSnapshotRef.current = null;
-    snapshotHistoryRef.current = [];
+    snapshotHistoryRef.current.clear();
     lastSignificantLevelsUpdateRef.current = 0;
   }, []);
 

@@ -119,12 +119,6 @@
  * Inner glow effect creates depth by simulating light emanating from within.
  * Apply to panels that contain important data or active states.
  */
-.glass-inner-glow {
-  position: relative;
-  box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.05),
-    var(--shadow-md);
-}
 
 .glass-inner-glow::before {
   content: '';
@@ -188,7 +182,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.4) 50%,
     transparent 100%
   );
   transform: translateX(-100%);

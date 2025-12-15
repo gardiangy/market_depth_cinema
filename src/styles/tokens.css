@@ -22,7 +22,7 @@
      ========================================== */
 
   /* Glass backgrounds - semi-transparent with subtle tints */
-  --glass-bg-base: rgba(18, 18, 24, 0.7);
+  --glass-bg-base: rgba(18, 18, 24, 0.2);
   --glass-bg-elevated: rgba(26, 26, 34, 0.8);
   --glass-bg-subtle: rgba(10, 10, 15, 0.5);
 
@@ -47,19 +47,19 @@
      ========================================== */
 
   /* Bid side - vibrant emerald greens */
-  --color-bid: #10b981;
+  --color-bid: #0d7250;
   --color-bid-bright: #34d399;
   --color-bid-dim: #059669;
   --color-bid-glow: rgba(16, 185, 129, 0.15);
 
   /* Ask side - energetic reds */
-  --color-ask: #ef4444;
+  --color-ask: #c53636;
   --color-ask-bright: #f87171;
   --color-ask-dim: #dc2626;
   --color-ask-glow: rgba(239, 68, 68, 0.15);
 
   /* Mid price - golden yellow for attention */
-  --color-mid: #fbbf24;
+  --color-mid: #c0921f;
   --color-mid-bright: #fcd34d;
   --color-mid-dim: #f59e0b;
   --color-mid-glow: rgba(251, 191, 36, 0.15);
@@ -217,4 +217,71 @@
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
+
+  /* ==========================================
+     SHADCN/UI CSS VARIABLES - Liquid Glass Theme
+     ========================================== */
+
+  /* Core background colors */
+  --background: 228 14% 2%;
+  --foreground: 0 0% 98%;
+
+  /* Card/Panel surfaces */
+  --card: 228 14% 5%;
+  --card-foreground: 0 0% 98%;
+
+  /* Popover surfaces */
+  --popover: 228 14% 5%;
+  --popover-foreground: 0 0% 98%;
+
+  /* Primary action color */
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary/muted elements */
+  --secondary: 228 14% 12%;
+  --secondary-foreground: 0 0% 98%;
+
+  /* Muted backgrounds */
+  --muted: 228 14% 10%;
+  --muted-foreground: 0 0% 64%;
+
+  /* Accent color (golden mid) */
+  --accent: 43 96% 56%;
+  --accent-foreground: 228 14% 5%;
+
+  /* Destructive/error color */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Success color (bid green) */
+  --success: 160 84% 39%;
+  --success-foreground: 0 0% 100%;
+
+  /* Border colors */
+  --border: 228 14% 18%;
+  --input: 228 14% 18%;
+
+  /* Focus ring */
+  --ring: 217 91% 60%;
+
+  /* Chart colors */
+  --chart-1: 217 91% 60%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 0 84% 60%;
+  --chart-4: 43 96% 56%;
+  --chart-5: 263 70% 50%;
+
+  /* Border radius */
+  --radius: 0.5rem;
+
+  /* Sidebar (if needed) */
+  --sidebar-background: 228 14% 3%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 228 14% 10%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 228 14% 15%;
+  --sidebar-ring: 217 91% 60%;
 }

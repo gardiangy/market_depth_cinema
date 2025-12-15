@@ -2,10 +2,16 @@
  * Events Store
  *
  * Manages detected events state and provides filtering/selection functionality.
+ * Events are pruned to prevent unbounded memory growth.
  */
 
 import { create } from 'zustand';
 import type { DetectedEvent, EventType, EventSeverity } from '../types';
+
+// Maximum number of events to keep in memory
+const MAX_EVENTS = 1000;
+// Keep events from the last 10 minutes
+const MAX_EVENT_AGE_MS = 10 * 60 * 1000;
 
 interface EventFilters {
   types: Set<EventType>;
@@ -62,9 +68,18 @@ export const useEventsStore = create<EventsState>((set, get) => ({
       const exists = state.events.some((e) => e.id === event.id);
       if (exists) return state;
 
-      return {
-        events: [...state.events, event].sort((a, b) => a.timestamp - b.timestamp),
-      };
+      let events = [...state.events, event].sort((a, b) => a.timestamp - b.timestamp);
+
+      // Prune old events by time
+      const cutoffTime = Date.now() - MAX_EVENT_AGE_MS;
+      events = events.filter((e) => e.timestamp >= cutoffTime);
+
+      // Prune by count - keep only the newest MAX_EVENTS
+      if (events.length > MAX_EVENTS) {
+        events = events.slice(-MAX_EVENTS);
+      }
+
+      return { events };
     }),
 
   addEvents: (newEvents) =>
@@ -75,11 +90,20 @@ export const useEventsStore = create<EventsState>((set, get) => ({
 
       if (uniqueEvents.length === 0) return state;
 
-      return {
-        events: [...state.events, ...uniqueEvents].sort(
-          (a, b) => a.timestamp - b.timestamp
-        ),
-      };
+      let events = [...state.events, ...uniqueEvents].sort(
+        (a, b) => a.timestamp - b.timestamp
+      );
+
+      // Prune old events by time
+      const cutoffTime = Date.now() - MAX_EVENT_AGE_MS;
+      events = events.filter((e) => e.timestamp >= cutoffTime);
+
+      // Prune by count - keep only the newest MAX_EVENTS
+      if (events.length > MAX_EVENTS) {
+        events = events.slice(-MAX_EVENTS);
+      }
+
+      return { events };
     }),
 
   removeEvent: (eventId) =>

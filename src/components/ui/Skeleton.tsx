@@ -1,149 +1,186 @@
 /**
- * Skeleton Loading Components
+ * Skeleton Loading Components - shadcn/ui style
  *
- * Graceful loading states that maintain visual hierarchy during content fetch.
- * Uses the skeleton.css classes for styling and animation.
+ * Graceful loading states with liquid glass aesthetic.
+ * Uses Tailwind classes for styling with shimmer animations.
  */
 
-import type { CSSProperties, ReactNode } from 'react';
+import { cn } from '@/lib/utils'
 
 /* ==========================================
    BASE SKELETON COMPONENT
    ========================================== */
 
-interface SkeletonProps {
-  className?: string;
-  style?: CSSProperties;
-  children?: ReactNode;
+interface SkeletonProps extends React.ComponentProps<'div'> {
+  className?: string
 }
 
 /**
  * Base skeleton component with pulsing glass effect.
- * Combines the skeleton class with any additional classes.
  */
-export function Skeleton({ className = '', style, children }: SkeletonProps) {
+function Skeleton({ className, ...props }: SkeletonProps) {
   return (
-    <div className={`skeleton ${className}`.trim()} style={style}>
-      {children}
-    </div>
-  );
+    <div
+      data-slot="skeleton"
+      className={cn(
+        'relative overflow-hidden rounded-md bg-[var(--glass-bg-base)] backdrop-blur-sm',
+        'before:absolute before:inset-0 before:animate-pulse before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent',
+        'after:absolute after:inset-0 after:-translate-x-full after:animate-[shimmer_2s_infinite] after:bg-gradient-to-r after:from-transparent after:via-white/10 after:to-transparent',
+        className
+      )}
+      aria-hidden="true"
+      {...props}
+    />
+  )
 }
 
 /* ==========================================
    TEXT SKELETON VARIANTS
    ========================================== */
 
-interface SkeletonTextProps {
-  size?: 'sm' | 'base' | 'lg';
-  width?: string | number;
-  className?: string;
+interface SkeletonTextProps extends React.ComponentProps<'div'> {
+  size?: 'sm' | 'base' | 'lg'
+  width?: string | number
 }
 
 /**
  * Text line skeleton - mimics lines of text.
  */
-export function SkeletonText({ size = 'base', width = '100%', className = '' }: SkeletonTextProps) {
-  const sizeClass = size === 'sm' ? 'skeleton-text-sm' : size === 'lg' ? 'skeleton-text-lg' : 'skeleton-text';
+function SkeletonText({
+  size = 'base',
+  width = '100%',
+  className,
+  style,
+  ...props
+}: SkeletonTextProps) {
+  const heights = {
+    sm: 'h-3',
+    base: 'h-4',
+    lg: 'h-5',
+  }
 
   return (
-    <div
-      className={`skeleton ${sizeClass} ${className}`.trim()}
-      style={{ width }}
-      aria-hidden="true"
+    <Skeleton
+      className={cn(heights[size], 'w-full rounded', className)}
+      style={{ width, ...style }}
+      {...props}
     />
-  );
+  )
 }
 
 /**
  * Heading skeleton - for larger text blocks.
  */
-export function SkeletonHeading({ width = '60%', className = '' }: Omit<SkeletonTextProps, 'size'>) {
+function SkeletonHeading({
+  width = '60%',
+  className,
+  style,
+  ...props
+}: Omit<SkeletonTextProps, 'size'>) {
   return (
-    <div
-      className={`skeleton skeleton-heading ${className}`.trim()}
-      style={{ width }}
-      aria-hidden="true"
+    <Skeleton
+      className={cn('h-7 rounded', className)}
+      style={{ width, ...style }}
+      {...props}
     />
-  );
+  )
 }
 
 /**
  * Paragraph skeleton - multiple text lines.
  */
-export function SkeletonParagraph({ lines = 3, className = '' }: { lines?: number; className?: string }) {
+function SkeletonParagraph({
+  lines = 3,
+  className,
+  ...props
+}: React.ComponentProps<'div'> & { lines?: number }) {
   return (
-    <div className={`skeleton-paragraph ${className}`.trim()} aria-hidden="true">
+    <div className={cn('space-y-2', className)} aria-hidden="true" {...props}>
       {Array.from({ length: lines }).map((_, i) => (
-        <SkeletonText key={i} />
+        <SkeletonText
+          key={i}
+          className={i === lines - 1 ? 'w-4/5' : 'w-full'}
+        />
       ))}
     </div>
-  );
+  )
 }
 
 /* ==========================================
    SHAPE SKELETON VARIANTS
    ========================================== */
 
-interface SkeletonCircleProps {
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
+interface SkeletonCircleProps extends React.ComponentProps<'div'> {
+  size?: 'sm' | 'md' | 'lg'
 }
 
 /**
  * Circle skeleton - for avatars, icons, or round elements.
  */
-export function SkeletonCircle({ size = 'md', className = '' }: SkeletonCircleProps) {
-  const sizeClass = `skeleton-circle-${size}`;
+function SkeletonCircle({ size = 'md', className, ...props }: SkeletonCircleProps) {
+  const sizes = {
+    sm: 'size-8',
+    md: 'size-10',
+    lg: 'size-12',
+  }
 
   return (
-    <div
-      className={`skeleton skeleton-circle ${sizeClass} ${className}`.trim()}
-      aria-hidden="true"
+    <Skeleton
+      className={cn(sizes[size], 'rounded-full', className)}
+      {...props}
     />
-  );
+  )
 }
 
-interface SkeletonRectProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  width?: string | number;
-  height?: string | number;
-  className?: string;
+interface SkeletonRectProps extends React.ComponentProps<'div'> {
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  width?: string | number
+  height?: string | number
 }
 
 /**
  * Rectangle skeleton - for cards, images, or block elements.
  */
-export function SkeletonRect({ size = 'md', width = '100%', height, className = '' }: SkeletonRectProps) {
-  const sizeClass = size ? `skeleton-rect-${size}` : '';
-  const style: CSSProperties = { width };
-  if (height) style.height = height;
+function SkeletonRect({
+  size = 'md',
+  width = '100%',
+  height,
+  className,
+  style,
+  ...props
+}: SkeletonRectProps) {
+  const heights = {
+    sm: 'h-16',
+    md: 'h-24',
+    lg: 'h-32',
+    xl: 'h-48',
+  }
 
   return (
-    <div
-      className={`skeleton skeleton-rect ${sizeClass} ${className}`.trim()}
-      style={style}
-      aria-hidden="true"
+    <Skeleton
+      className={cn(heights[size], 'w-full rounded-lg', className)}
+      style={{ width, height, ...style }}
+      {...props}
     />
-  );
+  )
 }
 
 /**
  * Square skeleton - for square images or icons.
  */
-export function SkeletonSquare({ size, className = '' }: { size?: string | number; className?: string }) {
-  const style: CSSProperties = {};
-  if (size) {
-    style.width = size;
-    style.height = size;
-  }
-
+function SkeletonSquare({
+  size,
+  className,
+  style,
+  ...props
+}: React.ComponentProps<'div'> & { size?: string | number }) {
   return (
-    <div
-      className={`skeleton skeleton-square ${className}`.trim()}
-      style={style}
-      aria-hidden="true"
+    <Skeleton
+      className={cn('aspect-square rounded-lg', className)}
+      style={{ width: size, height: size, ...style }}
+      {...props}
     />
-  );
+  )
 }
 
 /* ==========================================
@@ -153,57 +190,78 @@ export function SkeletonSquare({ size, className = '' }: { size?: string | numbe
 /**
  * Event card skeleton - matches EventListItem layout.
  */
-export function SkeletonEventCard({ className = '' }: { className?: string }) {
+function SkeletonEventCard({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div className={`skeleton-event-card ${className}`.trim()} aria-hidden="true">
-      <SkeletonCircle size="md" />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
-        <SkeletonText size="sm" width="70%" />
-        <SkeletonText size="sm" width="90%" />
-        <SkeletonText size="sm" width="40%" />
+    <div
+      className={cn(
+        'flex gap-3 rounded-lg border border-[var(--glass-border-color)] bg-[var(--glass-bg-base)] p-3',
+        className
+      )}
+      aria-hidden="true"
+      {...props}
+    >
+      <SkeletonCircle size="sm" />
+      <div className="flex flex-1 flex-col gap-2">
+        <SkeletonText size="sm" className="w-[70%]" />
+        <SkeletonText size="sm" className="w-[90%]" />
+        <SkeletonText size="sm" className="w-[40%]" />
       </div>
     </div>
-  );
+  )
 }
 
 /**
  * Chart skeleton - for depth chart loading state.
  */
-export function SkeletonChart({ className = '' }: { className?: string }) {
+function SkeletonChart({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
-      className={`skeleton skeleton-chart ${className}`.trim()}
-      style={{ width: '100%', height: '100%', minHeight: '400px' }}
+    <Skeleton
+      className={cn('h-full min-h-[400px] w-full rounded-lg', className)}
       aria-label="Loading chart..."
-      aria-hidden="true"
+      {...props}
     />
-  );
+  )
 }
 
 /* ==========================================
    THEME VARIANTS
    ========================================== */
 
-interface SkeletonVariantProps {
-  variant?: 'primary' | 'success' | 'warning';
-  className?: string;
-  style?: CSSProperties;
-  children?: ReactNode;
+interface SkeletonVariantProps extends React.ComponentProps<'div'> {
+  variant?: 'primary' | 'success' | 'warning'
 }
 
 /**
  * Skeleton with colored tint for different content types.
  */
-export function SkeletonVariant({ variant = 'primary', className = '', style, children }: SkeletonVariantProps) {
-  const variantClass = `skeleton-${variant}`;
+function SkeletonVariant({
+  variant = 'primary',
+  className,
+  ...props
+}: SkeletonVariantProps) {
+  const variantStyles = {
+    primary: 'before:via-blue-500/10 after:via-blue-500/15',
+    success: 'before:via-emerald-500/10 after:via-emerald-500/15',
+    warning: 'before:via-amber-500/10 after:via-amber-500/15',
+  }
 
   return (
-    <div
-      className={`skeleton ${variantClass} ${className}`.trim()}
-      style={style}
-      aria-hidden="true"
-    >
-      {children}
-    </div>
-  );
+    <Skeleton
+      className={cn(variantStyles[variant], className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonHeading,
+  SkeletonParagraph,
+  SkeletonCircle,
+  SkeletonRect,
+  SkeletonSquare,
+  SkeletonEventCard,
+  SkeletonChart,
+  SkeletonVariant,
 }

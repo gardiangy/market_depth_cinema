@@ -178,4 +178,60 @@ export class CircularBuffer {
       end: newest.timestamp,
     };
   }
+
+  /**
+   * Get the N oldest snapshots without copying entire buffer
+   * @param n - Number of snapshots to retrieve
+   * @returns Array of oldest snapshots (up to n)
+   */
+  getOldestN(n: number): OrderbookSnapshot[] {
+    if (this.size === 0 || n <= 0) {
+      return [];
+    }
+
+    const count = Math.min(n, this.size);
+    const result: OrderbookSnapshot[] = [];
+    const startIndex = this.size < this.capacity ? 0 : this.head;
+
+    for (let i = 0; i < count; i++) {
+      const index = (startIndex + i) % this.capacity;
+      if (this.buffer[index]) {
+        result.push(this.buffer[index]);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Remove the N oldest snapshots from the buffer
+   * @param n - Number of snapshots to remove
+   */
+  removeOldestN(n: number): void {
+    if (this.size === 0 || n <= 0) {
+      return;
+    }
+
+    const count = Math.min(n, this.size);
+
+    if (this.size < this.capacity) {
+      // Buffer not full yet - shift elements
+      for (let i = 0; i < this.size - count; i++) {
+        this.buffer[i] = this.buffer[i + count];
+      }
+      // Clear removed slots
+      for (let i = this.size - count; i < this.size; i++) {
+        this.buffer[i] = undefined as unknown as OrderbookSnapshot;
+      }
+      this.size -= count;
+      // head stays at size position since we're not at capacity
+      this.head = this.size;
+    } else {
+      // Buffer is full - just advance the logical start
+      // The old slots will be overwritten naturally
+      this.size -= count;
+      // Move head forward past the removed elements
+      this.head = (this.head + count) % this.capacity;
+    }
+  }
 }

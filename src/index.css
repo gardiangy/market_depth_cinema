@@ -2,33 +2,18 @@
    DESIGN SYSTEM IMPORTS
    ========================================== */
 
-/* Design tokens - color palette, spacing, shadows, transitions */
+/* Design tokens - color palette, spacing, shadows, transitions, shadcn CSS variables */
 @import './styles/tokens.css';
 
 /* Glass effects - glassmorphism components with backdrop blur */
 @import './styles/glass.css';
 
-/* Button system - comprehensive button variants and states */
-@import './styles/buttons.css';
-
 /* Focus ring utilities - accessible keyboard navigation */
 @import './styles/focus.css';
-
-/* Skeleton loading states - graceful content loading */
-@import './styles/skeleton.css';
 
 /* Tailwind CSS utility classes */
 @import "tailwindcss";
 
-/* ==========================================
-   GLOBAL RESETS
-   ========================================== */
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 
 /* ==========================================
    ROOT CONFIGURATION
@@ -84,7 +69,7 @@ body::before {
       transparent 60%
     );
   background-size: 200% 200%;
-  animation: gradient-drift 20s ease-in-out infinite;
+  animation: gradient-drift 40s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -109,6 +94,30 @@ body::before {
   50% {
     opacity: 0;
     transform: scale(2);
+  }
+}
+
+/* Live indicator pulse - expands outward and fades */
+@keyframes live-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Pulse ring animation for event highlights (CSS-based, no memory leak) */
+@keyframes pulse-ring {
+  0% {
+    r: 8;
+    opacity: 0.8;
+  }
+  100% {
+    r: 30;
+    opacity: 0;
   }
 }
 
@@ -223,11 +232,6 @@ textarea {
   cursor: nwse-resize;
 }
 
-/* Help elements - help cursor */
-[title],
-.help {
-  cursor: help;
-}
 
 /* ==========================================
    REDUCED MOTION SUPPORT
@@ -309,9 +313,5 @@ textarea {
 
 /* Remove will-change after hover/animation ends to free GPU resources */
 .glass-card:not(:hover) {
-  will-change: auto;
-}
-
-.btn:not(:hover):not(:active) {
   will-change: auto;
 }

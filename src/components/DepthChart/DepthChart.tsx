@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import * as d3 from 'd3';
-import type { PriceLevel } from '../../types';
-import { useEventsStore } from '../../stores/eventsStore';
-import { EVENT_METADATA } from '../../lib/eventDetectionConfig';
+import { useEffect, useRef, useState, useCallback } from 'react'
+import * as d3 from 'd3'
+import { Plus, Minus, X } from 'lucide-react'
+import type { PriceLevel } from '../../types'
+import { useEventsStore } from '../../stores/eventsStore'
+import { EVENT_METADATA } from '../../lib/eventDetectionConfig'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface DepthChartProps {
   bids: PriceLevel[];
@@ -28,6 +36,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
   const [pinnedPrice, setPinnedPrice] = useState<number | null>(null);
   const lastUpdateTime = useRef(0);
   const animationFrame = useRef<number | null>(null);
+  const pulseAnimationRef = useRef<d3.Selection<SVGCircleElement, unknown, null, undefined> | null>(null);
 
   // Event selection state
   const selectedEventId = useEventsStore((state) => state.selectedEventId);
@@ -115,8 +124,8 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
     if (bids.length === 0 || asks.length === 0) return;
 
     const now = Date.now();
-    if (now - lastUpdateTime.current < 100) {
-      // Throttle to 100ms (10 updates per second)
+    // Throttle to 250ms - no transitions so we can be less frequent
+    if (now - lastUpdateTime.current < 250) {
       if (animationFrame.current) {
         cancelAnimationFrame(animationFrame.current);
       }
@@ -131,13 +140,12 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
     const rootStyles = getComputedStyle(document.documentElement);
     const colorBid = rootStyles.getPropertyValue('--color-bid').trim() || '#10b981';
     const colorAsk = rootStyles.getPropertyValue('--color-ask').trim() || '#ef4444';
-    const colorMid = rootStyles.getPropertyValue('--color-mid').trim() || '#fbbf24';
+    const colorMid = rootStyles.getPropertyValue('--color-mid-bright').trim() || '#fbbf24';
     const colorSecondary = rootStyles.getPropertyValue('--color-secondary').trim() || '#8b5cf6';
     const textSecondary = rootStyles.getPropertyValue('--text-secondary').trim() || '#a3a3a3';
     const textTertiary = rootStyles.getPropertyValue('--text-tertiary').trim() || '#737373';
     const surfaceBorder = rootStyles.getPropertyValue('--surface-4').trim() || '#404040';
 
-    // Interrupt all ongoing transitions to prevent memory leaks
     g.selectAll('*').interrupt();
 
     const margin = { top: 20, right: 60, bottom: 40, left: 60 };
@@ -313,7 +321,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         .attr('fill', colorSecondary)
         .attr('font-size', '11px')
         .attr('font-weight', 'bold')
-        .text(`📌 $${pinnedPrice.toFixed(2)}`);
+        .text(`$${pinnedPrice.toFixed(2)}`);
     } else {
       g.select('.pinned-price-line').attr('opacity', 0);
       g.select('.pinned-price-text').attr('opacity', 0);
@@ -370,6 +378,13 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
     // Render event highlights
     const highlightsGroup = g.select('.event-highlights');
+
+    // Stop any existing pulse animation before clearing
+    if (pulseAnimationRef.current) {
+      pulseAnimationRef.current.interrupt();
+      pulseAnimationRef.current = null;
+    }
+    highlightsGroup.selectAll('*').interrupt();
     highlightsGroup.selectAll('*').remove(); // Clear previous highlights
 
     if (selectedEvent) {
@@ -521,8 +536,8 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
             .attr('opacity', 0.7);
 
           setTooltip({
-            x: event.clientX,
-            y: event.clientY,
+            x: mouseX,
+            y: mouseY,
             price: closestLevel[0],
             volume: closestLevel[1],
           });
@@ -592,6 +607,12 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         animationFrame.current = null;
       }
 
+      // Stop pulse animation
+      if (pulseAnimationRef.current) {
+        pulseAnimationRef.current.interrupt();
+        pulseAnimationRef.current = null;
+      }
+
       // Remove all event listeners and interrupt transitions
       if (gRef.current) {
         gRef.current.selectAll('*').interrupt();
@@ -611,94 +632,97 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
       // Reset refs
       gRef.current = null;
       isInitialized.current = false;
-    };
+    }
   }, []);
 
   const handleZoomIn = () => {
     setZoomLevel((prev) => Math.min(10, prev * 1.2));
-  };
+  }
 
   const handleZoomOut = () => {
     setZoomLevel((prev) => Math.max(0.5, prev / 1.2));
-  };
+  }
 
   const handleResetZoom = () => {
     setZoomLevel(1);
-  };
+  }
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
       <svg ref={svgRef} className="w-full h-full" />
 
-      <div className="absolute top-2 right-2 flex flex-col gap-2" style={{ zIndex: 10 }}>
-        <div className="flex flex-col gap-1 glass-card" style={{ padding: 'var(--spacing-md)' }}>
-          <button
-            onClick={handleZoomIn}
-            className="btn btn-ghost btn-icon-sm"
-            title="Zoom In"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-          <button
-            onClick={handleResetZoom}
-            className="btn btn-ghost btn-icon-sm text-xs"
-            title="Reset Zoom"
-            style={{ fontSize: 'var(--font-size-xs)' }}
-          >
-            1:1
-          </button>
-          <button
-            onClick={handleZoomOut}
-            className="btn btn-ghost btn-icon-sm"
-            title="Zoom Out"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
-          </button>
-        </div>
+      {/* Zoom Controls */}
+      <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
+        <Card variant="glass" className="p-2 flex flex-row gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" onClick={handleZoomIn}>
+                <Plus className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Zoom In</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" onClick={handleResetZoom} className="text-xs">
+                1:1
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Reset Zoom</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" onClick={handleZoomOut}>
+                <Minus className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">Zoom Out</TooltipContent>
+          </Tooltip>
+        </Card>
+
         {pinnedPrice !== null && (
-          <div className="glass-card" style={{ padding: 'var(--spacing-sm)' }}>
-            <button
-              onClick={() => setPinnedPrice(null)}
-              className="btn btn-sm text-xs w-full"
-              style={{
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1))',
-                border: '1px solid rgba(139, 92, 246, 0.4)',
-                color: 'var(--color-secondary-bright)',
-              }}
-              title="Clear Pinned Price"
-            >
-              Clear Pin
-            </button>
-          </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPinnedPrice(null)}
+                  className="text-xs w-full bg-purple-500/20 border-purple-500/40 text-purple-300 hover:bg-purple-500/30"
+                >
+                  <X className="size-3 mr-1" />
+                  Clear Pin
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Clear Pinned Price</TooltipContent>
+            </Tooltip>
+          
         )}
       </div>
 
+      {/* Chart Tooltip */}
       {tooltip && (
-        <div
-          className="absolute glass-panel-elevated pointer-events-none"
+        <Card
+          variant="glass"
+          className="absolute pointer-events-none p-3 border-l-[3px]"
           style={{
-            left: tooltip.x + 10,
-            top: tooltip.y + 10,
-            padding: 'var(--spacing-md)',
-            fontSize: 'var(--font-size-sm)',
-            borderLeft: '3px solid var(--color-primary)',
+            left: tooltip.x + 80,
+            top: tooltip.y + 20,
           }}
         >
-          <div className="font-mono">
-            <div style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)' }}>Price:</div>
-            <div style={{ color: 'var(--color-mid-bright)', fontWeight: 'var(--font-weight-bold)' }}>${tooltip.price.toFixed(2)}</div>
-            <div style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--spacing-xs)' }}>Volume:</div>
-            <div style={{ color: 'var(--color-secondary-bright)', fontWeight: 'var(--font-weight-bold)' }}>{tooltip.volume.toFixed(4)} BTC</div>
+          <div className="font-mono text-sm">
+            <div className="text-[var(--text-tertiary)] text-xs">Price:</div>
+            <div className="text-[var(--color-mid-bright)] font-bold">${tooltip.price.toFixed(2)}</div>
+            <div className="text-[var(--text-tertiary)] text-xs mt-1">Volume:</div>
+            <div className="text-[var(--color-secondary-bright)] font-bold">{tooltip.volume.toFixed(4)} BTC</div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
 function calculateDepth(levels: PriceLevel[]): DepthPoint[] {
   let cumulative = 0;
