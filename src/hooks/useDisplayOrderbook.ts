@@ -66,6 +66,9 @@ export const useDisplayOrderbook = (): DisplayOrderbook => {
         debounceTimerRef.current = null;
       }
 
+      // Clear replay timestamp ref to prevent stale references
+      lastLoadedTimestampRef.current = 0;
+
       const prev = prevValuesRef.current;
 
       // Skip update if nothing changed (shallow compare)
@@ -79,6 +82,8 @@ export const useDisplayOrderbook = (): DisplayOrderbook => {
         return;
       }
 
+      // Store reference directly - no cloning needed for live mode
+      // Live data comes fresh from the store each time
       prevValuesRef.current = {
         bids: liveOrderbook.bids,
         asks: liveOrderbook.asks,
@@ -110,6 +115,9 @@ export const useDisplayOrderbook = (): DisplayOrderbook => {
       debounceTimerRef.current = null;
     }
 
+    // Clear live mode ref to allow GC of live data
+    prevValuesRef.current = null;
+
     // Throttle: only load if enough time has passed OR timestamp jumped significantly
     // This allows smooth playback while still debouncing rapid scrubbing
     const timeSinceLastLoad = Date.now() - lastLoadedTimestampRef.current;
@@ -132,11 +140,11 @@ export const useDisplayOrderbook = (): DisplayOrderbook => {
 
       if (snapshot) {
         lastLoadedTimestampRef.current = Date.now();
-        // Clone the snapshot data to prevent retaining references to buffer objects
-        // This allows the original buffer objects to be garbage collected
+        // Snapshots are already deeply cloned in SnapshotContext
+        // Use them directly without additional cloning
         setDisplayData({
-          bids: snapshot.bids.map(level => [...level] as PriceLevel),
-          asks: snapshot.asks.map(level => [...level] as PriceLevel),
+          bids: snapshot.bids,
+          asks: snapshot.asks,
           spread: snapshot.spread,
           midPrice: snapshot.midPrice,
         });

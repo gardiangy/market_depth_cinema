@@ -43,10 +43,11 @@ export const SnapshotProvider = ({ children }: SnapshotProviderProps) => {
       const { bids, asks, spread, midPrice } = currentState;
 
       if (bids.length > 0 && asks.length > 0) {
+        // Deep clone price levels to prevent retaining references to store data
         const snapshot: OrderbookSnapshot = {
           timestamp: Date.now(),
-          bids: [...bids],
-          asks: [...asks],
+          bids: bids.map(([price, volume]) => [price, volume]),
+          asks: asks.map(([price, volume]) => [price, volume]),
           spread,
           midPrice,
         };
