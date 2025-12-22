@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import * as d3 from 'd3'
 import { Plus, Minus, X } from 'lucide-react'
 import type { PriceLevel } from '../../types'
 import { useEventsStore } from '../../stores/eventsStore'
 import { EVENT_METADATA, getEventDescription } from '../../lib/eventDetectionConfig'
+import { aggregateOrderbook, DEFAULT_PRICE_STEP } from '../../lib/orderbookAggregation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -43,6 +44,42 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
   const selectedEventId = useEventsStore((state) => state.selectedEventId);
   const getEventById = useEventsStore((state) => state.getEventById);
   const selectedEvent = selectedEventId ? getEventById(selectedEventId) : null;
+
+  // Aggregate orderbook data into $10 price buckets for smoother visualization
+  // Then extend to actual best bid/ask so curves meet at the real spread
+  const { bids: aggregatedBids, asks: aggregatedAsks } = useMemo(() => {
+    const { bids: aggBids, asks: aggAsks } = aggregateOrderbook(bids, asks, DEFAULT_PRICE_STEP);
+
+    // Extend aggregated data to include actual best bid/ask prices
+    // This eliminates the visual gap between aggregated curves and the mid price
+    if (bids.length > 0 && aggBids.length > 0) {
+      const actualBestBid = bids[0][0];
+      const aggregatedBestBid = aggBids[0][0];
+
+      // If actual best bid is higher than aggregated bucket, add it as first point
+      if (actualBestBid > aggregatedBestBid) {
+        // Use the quantity from the first aggregated bucket (it contains this price)
+        aggBids.unshift([actualBestBid, aggBids[0][1]] as [number, number]);
+        // Set the original bucket quantity to 0 so cumulative calculation works
+        aggBids[1] = [aggBids[1][0], 0] as [number, number];
+      }
+    }
+
+    if (asks.length > 0 && aggAsks.length > 0) {
+      const actualBestAsk = asks[0][0];
+      const aggregatedBestAsk = aggAsks[0][0];
+
+      // If actual best ask is lower than aggregated bucket, add it as first point
+      if (actualBestAsk < aggregatedBestAsk) {
+        // Use the quantity from the first aggregated bucket (it contains this price)
+        aggAsks.unshift([actualBestAsk, aggAsks[0][1]] as [number, number]);
+        // Set the original bucket quantity to 0 so cumulative calculation works
+        aggAsks[1] = [aggAsks[1][0], 0] as [number, number];
+      }
+    }
+
+    return { bids: aggBids, asks: aggAsks };
+  }, [bids, asks]);
 
   // Calculate x position for a given price (for tooltip positioning)
   const getPriceXPosition = useCallback((price: number): number | null => {
@@ -146,7 +183,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
   const updateChart = useCallback(() => {
     if (!gRef.current || !isInitialized.current) return;
-    if (bids.length === 0 || asks.length === 0) return;
+    if (aggregatedBids.length === 0 || aggregatedAsks.length === 0) return;
 
     const now = Date.now();
     // Throttle to 250ms - no transitions so we can be less frequent
@@ -177,8 +214,9 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
     const innerWidth = dimensions.width - margin.left - margin.right;
     const innerHeight = dimensions.height - margin.top - margin.bottom;
 
-    const bidDepth = calculateDepth(bids);
-    const askDepth = calculateDepth(asks);
+    // Use aggregated data for smoother depth curves
+    const bidDepth = calculateDepth(aggregatedBids);
+    const askDepth = calculateDepth(aggregatedAsks);
 
     const allPrices = [...bidDepth.map((d) => d.price), ...askDepth.map((d) => d.price)];
     const allVolumes = [...bidDepth.map((d) => d.cumulative), ...askDepth.map((d) => d.cumulative)];
@@ -246,8 +284,8 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
     }
 
     if (showHeatmap) {
-      const maxBidVolume = d3.max(bids, (d) => d[1]) || 1;
-      const maxAskVolume = d3.max(asks, (d) => d[1]) || 1;
+      const maxBidVolume = d3.max(aggregatedBids, (d) => d[1]) || 1;
+      const maxAskVolume = d3.max(aggregatedAsks, (d) => d[1]) || 1;
 
       const bidColorScale = d3.scaleLinear<string>()
         .domain([0, maxBidVolume])
@@ -257,11 +295,11 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         .domain([0, maxAskVolume])
         .range(['rgba(239, 68, 68, 0)', 'rgba(239, 68, 68, 0.6)']);
 
-      const barWidth = Math.max(1, Math.abs(innerWidth / (bids.length + asks.length)));
+      const barWidth = Math.max(1, Math.abs(innerWidth / (aggregatedBids.length + aggregatedAsks.length)));
 
       const bidHeatmap = g.select('.heatmap-bids')
         .selectAll<SVGRectElement, PriceLevel>('rect')
-        .data(bids.slice(0, 25), (d) => `bid-${d[0]}`);
+        .data(aggregatedBids.slice(0, 25), (d) => `bid-${d[0]}`);
 
       bidHeatmap.exit().remove();
 
@@ -279,7 +317,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
       const askHeatmap = g.select('.heatmap-asks')
         .selectAll<SVGRectElement, PriceLevel>('rect')
-        .data(asks.slice(0, 25), (d) => `ask-${d[0]}`);
+        .data(aggregatedAsks.slice(0, 25), (d) => `ask-${d[0]}`);
 
       askHeatmap.exit().remove();
 
@@ -513,7 +551,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         const [mouseX, mouseY] = d3.pointer(event);
         const price = xScale.invert(mouseX);
 
-        const allLevels = [...bids, ...asks];
+        const allLevels = [...aggregatedBids, ...aggregatedAsks];
         if (allLevels.length === 0) return;
 
         const closestLevel = allLevels.reduce((prev, curr) => {
@@ -568,7 +606,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         setPinnedPrice(price);
       });
 
-  }, [bids, asks, midPrice, spread, dimensions, showHeatmap, zoomLevel, pinnedPrice, selectedEvent]);
+  }, [aggregatedBids, aggregatedAsks, bids, asks, midPrice, spread, dimensions, showHeatmap, zoomLevel, pinnedPrice, selectedEvent]);
 
   useEffect(() => {
     if (!containerRef.current) return;

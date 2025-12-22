@@ -7,9 +7,12 @@ import { usePlayback } from './hooks/usePlayback'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useDisplayOrderbook } from './hooks/useDisplayOrderbook'
 import { useOrderbookStore } from './stores/orderbookStore'
+import { useUIStore } from './stores/uiStore'
 import { Controls } from './components/Controls/Controls'
 import { Timeline } from './components/Timeline/Timeline'
 import DepthChart from './components/DepthChart/DepthChart'
+import { OrderbookTableView } from './components/OrderbookTableView/OrderbookTableView'
+import { ViewToggle } from './components/ViewToggle/ViewToggle'
 import { EventPanel } from './components/EventPanel/EventPanel'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -35,6 +38,9 @@ function App() {
 
   // Get connection status from live orderbook
   const { isConnected } = useOrderbookStore()
+
+  // Get current view mode
+  const viewMode = useUIStore((state) => state.viewMode)
 
   // Get display data (live or replay depending on mode)
   const { bids, asks, spread, midPrice } = useDisplayOrderbook()
@@ -68,6 +74,8 @@ function App() {
               BTC/USD Orderbook Visualizer
             </p>
           </div>
+          {/* View Mode Toggle */}
+          <ViewToggle />
           <div className="flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -117,16 +125,51 @@ function App() {
 
       {/* Main Content Area */}
       <div className="flex-1 min-h-0 flex gap-4 p-4">
-        {/* Depth Chart */}
+        {/* Visualization Area - switches between Depth Chart and Orderbook Table */}
         <div className="flex-1 min-w-0 relative">
-          <Card variant="ghost" className="h-full p-4">
-            <DepthChart
-              bids={bids}
-              asks={asks}
-              midPrice={midPrice}
-              spread={spread}
-              showHeatmap={false}
-            />
+          <Card variant="ghost" className="h-full p-4 overflow-hidden">
+            <AnimatePresence mode="wait">
+              {viewMode === 'depth-chart' ? (
+                <motion.div
+                  key="depth-chart"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
+                  className="w-full h-full"
+                >
+                  <DepthChart
+                    bids={bids}
+                    asks={asks}
+                    midPrice={midPrice}
+                    spread={spread}
+                    showHeatmap={false}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="orderbook-table"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
+                  className="w-full h-full mt-16"
+                >
+                  <OrderbookTableView
+                    bids={bids}
+                    asks={asks}
+                    midPrice={midPrice}
+                    spread={spread}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
 
           {/* Playback Controls Overlay */}
