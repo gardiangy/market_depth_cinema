@@ -156,7 +156,7 @@ function App() {
       {/* Timeline Scrubber */}
       <div className="flex-none px-4 pb-4">
         <Card variant="default" className="p-4">
-          <Timeline />
+          <Timeline showEventMarkers={isEventPanelOpen} />
         </Card>
       </div>
 

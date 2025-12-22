@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button';
 import { ChevronsRight } from 'lucide-react';
 import type { DetectedEvent, AggregatedTimelineMarker, EventSeverity } from '../../types';
 
-export const Timeline = () => {
+interface TimelineProps {
+  showEventMarkers?: boolean;
+}
+
+export const Timeline = ({ showEventMarkers = true }: TimelineProps) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -21,8 +25,19 @@ export const Timeline = () => {
   const events = useEventsStore((state) => state.events);
   const filters = useEventsStore((state) => state.filters);
 
-  // Minimum distance between markers (in percentage) before they get aggregated
-  const MIN_MARKER_DISTANCE = 2; // 2% of timeline width
+  // Time-based aggregation: group events within this many milliseconds
+  const AGGREGATION_TIME_MS = 10000; // 10 seconds
+
+  // Calculate minimum marker distance based on timeline duration
+  // This ensures consistent visual grouping regardless of timeline length
+  const getMinMarkerDistance = (): number => {
+    if (!displayRange) return 2;
+    const timelineMs = displayRange.end - displayRange.start;
+    // Convert time threshold to percentage of timeline
+    const timeBasedPercent = (AGGREGATION_TIME_MS / timelineMs) * 100;
+    // Clamp between 1% and 5% for visual consistency
+    return Math.max(1, Math.min(5, timeBasedPercent));
+  };
 
   // Calculate position for a timestamp
   const calculatePosition = (timestamp: number): number => {
@@ -37,6 +52,9 @@ export const Timeline = () => {
   // Groups by SEVERITY first, then by position - so different severities stay separate
   const aggregatedMarkers = useMemo((): AggregatedTimelineMarker[] => {
     if (!displayRange) return [];
+
+    // Get dynamic marker distance based on timeline duration
+    const minMarkerDistance = getMinMarkerDistance();
 
     // Apply filters
     const filtered = events.filter((event) => {
@@ -93,7 +111,7 @@ export const Timeline = () => {
           const avgPosition =
             currentCluster.positions.reduce((a, b) => a + b, 0) / currentCluster.positions.length;
 
-          if (Math.abs(position - avgPosition) <= MIN_MARKER_DISTANCE) {
+          if (Math.abs(position - avgPosition) <= minMarkerDistance) {
             currentCluster.events.push(event);
             currentCluster.positions.push(position);
           } else {
@@ -330,13 +348,14 @@ export const Timeline = () => {
             : 'Drag to scrub through time'
         }
       >
-        {/* Progress Bar with Shimmer */}
+        {/* Progress Bar with Shimmer - semi-transparent so markers show through */}
         {mode === 'replay' && (
         <div
           className="absolute top-0 left-0 h-full rounded-lg transition-all duration-100 glass-shimmer"
           style={{
             width: `${positionPercentage}%`,
             background: 'linear-gradient(135deg, var(--color-primary-dim) 0%, var(--color-primary) 50%, var(--color-primary-bright) 100%)',
+            opacity: 0.4,
             boxShadow: 'var(--shadow-glow-primary)',
           }}
         />
@@ -355,40 +374,42 @@ export const Timeline = () => {
           ))}
         </div>
 
-        {/* Severity Lane Indicators */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* High severity zone (top) */}
-          <div
-            className="absolute left-0 right-0 h-[1px]"
-            style={{
-              top: '20%',
-              background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3) 10%, rgba(239, 68, 68, 0.3) 90%, transparent)',
-            }}
-          />
-          {/* Medium severity zone (middle) */}
-          <div
-            className="absolute left-0 right-0 h-[1px]"
-            style={{
-              top: '50%',
-              background: 'linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.2) 10%, rgba(245, 158, 11, 0.2) 90%, transparent)',
-            }}
-          />
-          {/* Low severity zone (bottom) */}
-          <div
-            className="absolute left-0 right-0 h-[1px]"
-            style={{
-              top: '80%',
-              background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2) 10%, rgba(59, 130, 246, 0.2) 90%, transparent)',
-            }}
-          />
-          {/* Severity labels on the left */}
-          <div className="absolute left-1 top-[20%] -translate-y-1/2 text-[8px] font-medium text-red-400/60">H</div>
-          <div className="absolute left-1 top-[50%] -translate-y-1/2 text-[8px] font-medium text-amber-400/60">M</div>
-          <div className="absolute left-1 top-[80%] -translate-y-1/2 text-[8px] font-medium text-blue-400/60">L</div>
-        </div>
+        {/* Severity Lane Indicators - only show when event markers are visible */}
+        {showEventMarkers && (
+          <div className="absolute inset-0 pointer-events-none">
+            {/* High severity zone (top) */}
+            <div
+              className="absolute left-0 right-0 h-[1px]"
+              style={{
+                top: '20%',
+                background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3) 10%, rgba(239, 68, 68, 0.3) 90%, transparent)',
+              }}
+            />
+            {/* Medium severity zone (middle) */}
+            <div
+              className="absolute left-0 right-0 h-[1px]"
+              style={{
+                top: '50%',
+                background: 'linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.2) 10%, rgba(245, 158, 11, 0.2) 90%, transparent)',
+              }}
+            />
+            {/* Low severity zone (bottom) */}
+            <div
+              className="absolute left-0 right-0 h-[1px]"
+              style={{
+                top: '80%',
+                background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2) 10%, rgba(59, 130, 246, 0.2) 90%, transparent)',
+              }}
+            />
+            {/* Severity labels on the left */}
+            <div className="absolute left-1 top-[20%] -translate-y-1/2 text-[8px] font-medium text-red-400/60">H</div>
+            <div className="absolute left-1 top-[50%] -translate-y-1/2 text-[8px] font-medium text-amber-400/60">M</div>
+            <div className="absolute left-1 top-[80%] -translate-y-1/2 text-[8px] font-medium text-blue-400/60">L</div>
+          </div>
+        )}
 
-        {/* Event Markers (Aggregated) */}
-        {displayRange && (
+        {/* Event Markers (Aggregated) - only show when event panel is open */}
+        {showEventMarkers && displayRange && (
           <div className="absolute inset-0 pointer-events-none">
             {aggregatedMarkers.map((marker) => (
               <div key={marker.id} className="pointer-events-auto">

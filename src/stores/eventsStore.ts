@@ -10,8 +10,8 @@ import type { DetectedEvent, EventType, EventSeverity } from '../types';
 
 // Maximum number of events to keep in memory
 const MAX_EVENTS = 1000;
-// Keep events from the last 10 minutes
-const MAX_EVENT_AGE_MS = 10 * 60 * 1000;
+// Keep events from the last 1 hour
+const MAX_EVENT_AGE_MS = 60 * 60 * 1000;
 
 interface EventFilters {
   types: Set<EventType>;
