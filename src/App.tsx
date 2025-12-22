@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PanelRightClose, PanelRight, Wifi, WifiOff } from 'lucide-react'
 import krakenLogo from './assets/kraken.svg'
@@ -19,6 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useEventDetection } from './hooks/useEventDetection'
 
 function App() {
   const [isEventPanelOpen, setIsEventPanelOpen] = useState(true)
@@ -37,6 +38,14 @@ function App() {
 
   // Get display data (live or replay depending on mode)
   const { bids, asks, spread, midPrice } = useDisplayOrderbook()
+
+  // Memoize snapshot to prevent infinite re-renders and memory leak
+  const currentSnapshot = useMemo(
+    () => (bids.length > 0 ? { timestamp: Date.now(), bids, asks, spread, midPrice } : null),
+    [bids, asks, spread, midPrice]
+  );
+
+  useEventDetection(currentSnapshot);
 
   return (
     <div className="w-full h-screen flex flex-col text-white">

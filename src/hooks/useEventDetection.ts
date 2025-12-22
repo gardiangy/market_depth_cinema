@@ -14,6 +14,9 @@ interface EventDetectionConfig {
   updateSignificantLevelsInterval?: number; // milliseconds, default 30000 (30s)
 }
 
+// Get stable reference to addEvents outside component to avoid re-renders
+const getAddEvents = () => useEventsStore.getState().addEvents;
+
 const SNAPSHOT_HISTORY_SIZE = 100;
 
 class SnapshotHistoryBuffer {
@@ -72,8 +75,6 @@ export function useEventDetection(
   const snapshotHistoryRef = useRef<SnapshotHistoryBuffer>(new SnapshotHistoryBuffer());
   const lastSignificantLevelsUpdateRef = useRef<number>(0);
 
-  const addEvents = useEventsStore((state) => state.addEvents);
-
   const { enabled, updateSignificantLevelsInterval = 30000 } = config;
 
   /**
@@ -97,7 +98,7 @@ export function useEventDetection(
       switch (type) {
         case 'events':
           if (data?.events && data.events.length > 0) {
-            addEvents(data.events);
+            getAddEvents()(data.events);
           }
           break;
 
@@ -124,7 +125,7 @@ export function useEventDetection(
       worker.terminate();
       workerRef.current = null;
     };
-  }, [enabled, addEvents]);
+  }, [enabled]);
 
   /**
    * Process new snapshot for event detection

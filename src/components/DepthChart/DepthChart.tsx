@@ -407,34 +407,15 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
           .attr('opacity', 0.8);
 
         // Animated pulse circle
-        const pulseCircle = highlightsGroup
+        highlightsGroup
           .append('circle')
           .attr('cx', xScale(price))
           .attr('cy', innerHeight / 2)
-          .attr('r', 8)
+          .attr('r', 15)
           .attr('fill', 'none')
           .attr('stroke', color)
           .attr('stroke-width', 2)
-          .attr('opacity', 0.8);
-
-        // Pulse animation
-        pulseCircle
-          .transition()
-          .duration(1000)
-          .ease(d3.easeLinear)
-          .attr('r', 30)
-          .attr('opacity', 0)
-          .on('end', function repeat() {
-            d3.select(this)
-              .attr('r', 8)
-              .attr('opacity', 0.8)
-              .transition()
-              .duration(1000)
-              .ease(d3.easeLinear)
-              .attr('r', 30)
-              .attr('opacity', 0)
-              .on('end', repeat);
-          });
+          .attr('class', 'svg-pulse-ring');
 
         // Label
         highlightsGroup

@@ -14,6 +14,8 @@ const cardVariants = cva(
           'border-[var(--glass-border-color-bright)] bg-[var(--glass-bg-elevated)] backdrop-blur-xl shadow-lg hover:shadow-xl',
         glass:
           'glass-inner-glow border-[var(--glass-border-color)] bg-[var(--glass-bg-base)] backdrop-blur-md shadow-sm hover:border-[var(--glass-border-color-bright)] hover:shadow-md',
+        flat:
+          'border-[var(--glass-border-color)] bg-[var(--surface-2)] shadow-sm hover:bg-[var(--surface-3)] hover:border-[var(--glass-border-color-bright)]',
         outline:
           'border-[var(--glass-border-color)] bg-transparent hover:border-[var(--glass-border-color-bright)]',
         ghost: 'border-transparent bg-transparent',

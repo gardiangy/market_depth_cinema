@@ -61,9 +61,9 @@ export const DEFAULT_THRESHOLDS: EventThresholds = {
   },
   rapidCancellations: {
     timeWindow: 1000, // 1 second
-    low: 5,
-    medium: 10,
-    high: 20,
+    low: 10,
+    medium: 20,
+    high: 40,
   },
   priceBreakthrough: {
     significantLevel: 0.5, // 0.5%

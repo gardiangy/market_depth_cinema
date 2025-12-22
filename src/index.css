@@ -112,13 +112,35 @@ body::before {
 /* Pulse ring animation for event highlights (CSS-based, no memory leak) */
 @keyframes pulse-ring {
   0% {
-    r: 8;
-    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
   }
   100% {
-    r: 30;
+    transform: translate(-50%, -50%) scale(2);
     opacity: 0;
   }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+/* SVG-specific pulse animation (no translate - SVG uses cx/cy positioning) */
+@keyframes svg-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.svg-pulse-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: svg-pulse-ring 1.5s ease-out infinite;
 }
 
 /* ==========================================

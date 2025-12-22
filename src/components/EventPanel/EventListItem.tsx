@@ -5,7 +5,7 @@
  * Clickable to jump to event timestamp and highlight on chart.
  */
 
-import { motion } from 'framer-motion'
+import { memo } from 'react'
 import type { DetectedEvent } from '../../types'
 import { EventIcon } from './EventIcon'
 import { EVENT_METADATA, getEventDescription } from '../../lib/eventDetectionConfig'
@@ -19,20 +19,20 @@ interface EventListItemProps {
   event: DetectedEvent
 }
 
-export function EventListItem({ event }: EventListItemProps) {
+// Memoize to prevent re-renders when other events change
+export const EventListItem = memo(function EventListItem({ event }: EventListItemProps) {
+  // Use single selector to reduce subscriptions
   const selectedEventId = useEventsStore((state) => state.selectedEventId)
-  const selectEvent = useEventsStore((state) => state.selectEvent)
-  const setCurrentTimestamp = usePlaybackStore((state) => state.setCurrentTimestamp)
-  const pause = usePlaybackStore((state) => state.pause)
 
   const isSelected = selectedEventId === event.id
   const metadata = EVENT_METADATA[event.type]
   const description = getEventDescription(event.type, event.details)
 
   const handleClick = () => {
-    selectEvent(event.id)
-    setCurrentTimestamp(event.timestamp)
-    pause()
+    // Access store methods directly to avoid extra subscriptions
+    useEventsStore.getState().selectEvent(event.id)
+    usePlaybackStore.getState().setCurrentTimestamp(event.timestamp)
+    usePlaybackStore.getState().pause()
   }
 
   const formatTime = (timestamp: number) => {
@@ -64,27 +64,22 @@ export function EventListItem({ event }: EventListItemProps) {
   }
 
   return (
-    <motion.button
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+    <button
       onClick={handleClick}
-      className="w-full text-left"
+      className="w-full text-left transition-transform duration-150 hover:scale-[1.01] active:scale-[0.99]"
     >
       <Card
-        variant="glass"
+        variant="flat"
         className={cn(
           'p-3 border-l-[3px] transition-all',
-          severityBorderColors[event.severity],
+          !isSelected && severityBorderColors[event.severity],
           severityBgColors[event.severity],
-          isSelected && 'ring-2 ring-white/20 shadow-lg bg-gradient-to-r from-white/5 to-transparent'
+          isSelected && 'ring-2 ring-primary/20 shadow-lg'
         )}
       >
         <div className="flex items-start gap-3">
           {/* Icon */}
-          <div className="flex-shrink-0 mt-0.5 p-1.5 rounded-md bg-white/5 backdrop-blur-sm">
+          <div className="flex-shrink-0 mt-0.5 p-1.5 rounded-md bg-white/5">
             <EventIcon type={event.type} severity={event.severity} size="md" />
           </div>
 
@@ -112,6 +107,6 @@ export function EventListItem({ event }: EventListItemProps) {
           </div>
         </div>
       </Card>
-    </motion.button>
+    </button>
   )
-}
+})

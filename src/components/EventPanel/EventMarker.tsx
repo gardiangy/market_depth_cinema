@@ -5,7 +5,7 @@
  * Color-coded by severity and clickable to jump to event.
  */
 
-import { motion } from 'framer-motion'
+import { memo } from 'react'
 import type { DetectedEvent } from '../../types'
 import { EVENT_METADATA, getEventDescription } from '../../lib/eventDetectionConfig'
 import { useEventsStore } from '../../stores/eventsStore'
@@ -24,11 +24,10 @@ interface EventMarkerProps {
   size?: 'sm' | 'md'
 }
 
-export function EventMarker({ event, position, size = 'md' }: EventMarkerProps) {
+// Memoize to prevent re-renders when other events change
+export const EventMarker = memo(function EventMarker({ event, position, size = 'md' }: EventMarkerProps) {
+  // Single selector to reduce subscriptions
   const selectedEventId = useEventsStore((state) => state.selectedEventId)
-  const selectEvent = useEventsStore((state) => state.selectEvent)
-  const setCurrentTimestamp = usePlaybackStore((state) => state.setCurrentTimestamp)
-  const pause = usePlaybackStore((state) => state.pause)
 
   const isSelected = selectedEventId === event.id
   const metadata = EVENT_METADATA[event.type]
@@ -36,9 +35,10 @@ export function EventMarker({ event, position, size = 'md' }: EventMarkerProps) 
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    selectEvent(event.id)
-    setCurrentTimestamp(event.timestamp)
-    pause()
+    // Access store methods directly to avoid extra subscriptions
+    useEventsStore.getState().selectEvent(event.id)
+    usePlaybackStore.getState().setCurrentTimestamp(event.timestamp)
+    usePlaybackStore.getState().pause()
   }
 
   const formatTime = (timestamp: number) => {
@@ -83,20 +83,13 @@ export function EventMarker({ event, position, size = 'md' }: EventMarkerProps) 
     <>
       <Tooltip>
         <TooltipTrigger asChild>
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{
-              scale: isSelected ? 1.4 : 1,
-              opacity: 1,
-            }}
-            whileHover={{ scale: isSelected ? 1.5 : 1.2 }}
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={handleClick}
-            className="absolute outline-none"
+            className="absolute outline-none transition-transform duration-150 hover:scale-125 active:scale-90"
             style={{
               left: `${position}%`,
               top: '50%',
-              transform: 'translate(-50%, -50%)',
+              transform: `translate(-50%, -50%) scale(${isSelected ? 1.4 : 1})`,
               width: config.size,
               height: config.size,
               backgroundColor: config.color,
@@ -146,19 +139,10 @@ export function EventMarker({ event, position, size = 'md' }: EventMarkerProps) 
         </TooltipContent>
       </Tooltip>
 
-      {/* Pulse animation for high severity events */}
+      {/* Pulse animation for high severity events - using CSS animation to avoid memory leaks */}
       {event.severity === 'high' && !isSelected && (
-        <motion.div
-          initial={{ scale: 1, opacity: 0.6 }}
-          animate={{
-            scale: [1, 1.8, 1],
-            opacity: [0.6, 0, 0.6],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
+        <div
+          className="animate-pulse-ring"
           style={{
             position: 'absolute',
             left: `${position}%`,
@@ -175,4 +159,4 @@ export function EventMarker({ event, position, size = 'md' }: EventMarkerProps) 
       )}
     </>
   )
-}
+})

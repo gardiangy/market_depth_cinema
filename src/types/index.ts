@@ -33,6 +33,26 @@ export interface DetectedEvent {
   details: Record<string, unknown>;
 }
 
+// Aggregated event for display (groups same-type events within the same second)
+export interface AggregatedEvent {
+  id: string; // Composite ID based on type + second
+  type: EventType;
+  timestamp: number; // Timestamp of the first event in the group
+  severity: EventSeverity; // Highest severity in the group
+  count: number; // Number of events aggregated
+  events: DetectedEvent[]; // Individual events in this group
+}
+
+// Aggregated timeline marker (groups events that would visually overlap)
+export interface AggregatedTimelineMarker {
+  id: string;
+  position: number; // 0-100, percentage position on timeline
+  timestamp: number; // Timestamp of the center/first event
+  severity: EventSeverity; // Highest severity in the group
+  count: number; // Number of events aggregated
+  events: DetectedEvent[]; // Individual events in this cluster
+}
+
 export interface KrakenSubscription {
   event: 'subscribe' | 'unsubscribe';
   pair: string[];

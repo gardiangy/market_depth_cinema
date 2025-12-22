@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { usePlaybackStore } from '../../stores/playbackStore';
 import { usePlayback } from '../../hooks/usePlayback';
 import { useEventsStore } from '../../stores/eventsStore';
-import { EventMarker } from '../EventPanel/EventMarker';
+import { AggregatedEventMarker } from '../EventPanel/AggregatedEventMarker';
 import { Button } from '@/components/ui/button';
 import { ChevronsRight } from 'lucide-react';
+import type { DetectedEvent, AggregatedTimelineMarker, EventSeverity } from '../../types';
 
 export const Timeline = () => {
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -20,21 +21,30 @@ export const Timeline = () => {
   const events = useEventsStore((state) => state.events);
   const filters = useEventsStore((state) => state.filters);
 
-  // Get events that fall within the display time range - properly memoized
-  const visibleEvents = useMemo(() => {
+  // Minimum distance between markers (in percentage) before they get aggregated
+  const MIN_MARKER_DISTANCE = 2; // 2% of timeline width
+
+  // Calculate position for a timestamp
+  const calculatePosition = (timestamp: number): number => {
+    if (!displayRange) return 0;
+    const { start, end } = displayRange;
+    const range = end - start;
+    if (range === 0) return 0;
+    return ((timestamp - start) / range) * 100;
+  };
+
+  // Get filtered events and aggregate markers that would overlap
+  // Groups by SEVERITY first, then by position - so different severities stay separate
+  const aggregatedMarkers = useMemo((): AggregatedTimelineMarker[] => {
     if (!displayRange) return [];
 
-    // Apply filters inline instead of calling getFilteredEvents()
-    return events.filter((event) => {
-      // Time range filter
+    // Apply filters
+    const filtered = events.filter((event) => {
       if (event.timestamp < displayRange.start || event.timestamp > displayRange.end) {
         return false;
       }
-      // Type filter
       if (!filters.types.has(event.type)) return false;
-      // Severity filter
       if (!filters.severities.has(event.severity)) return false;
-      // Search query
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase();
         const typeMatch = event.type.toLowerCase().includes(query);
@@ -43,6 +53,80 @@ export const Timeline = () => {
       }
       return true;
     });
+
+    if (filtered.length === 0) return [];
+
+    // Group events by severity first
+    const bySeverity: Record<EventSeverity, DetectedEvent[]> = {
+      low: [],
+      medium: [],
+      high: [],
+    };
+
+    for (const event of filtered) {
+      bySeverity[event.severity].push(event);
+    }
+
+    // Aggregate each severity group separately
+    const allMarkers: AggregatedTimelineMarker[] = [];
+
+    for (const severity of ['high', 'medium', 'low'] as EventSeverity[]) {
+      const severityEvents = bySeverity[severity];
+      if (severityEvents.length === 0) continue;
+
+      // Sort by timestamp
+      const sorted = [...severityEvents].sort((a, b) => a.timestamp - b.timestamp);
+
+      // Add position to each event
+      const eventsWithPosition = sorted.map((event) => ({
+        event,
+        position: calculatePosition(event.timestamp),
+      }));
+
+      // Aggregate events that are too close together (within same severity)
+      let currentCluster: { events: DetectedEvent[]; positions: number[] } | null = null;
+
+      for (const { event, position } of eventsWithPosition) {
+        if (!currentCluster) {
+          currentCluster = { events: [event], positions: [position] };
+        } else {
+          const avgPosition =
+            currentCluster.positions.reduce((a, b) => a + b, 0) / currentCluster.positions.length;
+
+          if (Math.abs(position - avgPosition) <= MIN_MARKER_DISTANCE) {
+            currentCluster.events.push(event);
+            currentCluster.positions.push(position);
+          } else {
+            allMarkers.push(createMarker(currentCluster.events, currentCluster.positions, severity));
+            currentCluster = { events: [event], positions: [position] };
+          }
+        }
+      }
+
+      if (currentCluster && currentCluster.events.length > 0) {
+        allMarkers.push(createMarker(currentCluster.events, currentCluster.positions, severity));
+      }
+    }
+
+    // Sort markers by position for consistent rendering order
+    return allMarkers.sort((a, b) => a.position - b.position);
+
+    function createMarker(
+      clusterEvents: DetectedEvent[],
+      positions: number[],
+      severity: EventSeverity
+    ): AggregatedTimelineMarker {
+      const avgPosition = positions.reduce((a, b) => a + b, 0) / positions.length;
+
+      return {
+        id: `cluster-${severity}-${clusterEvents[0].id}`,
+        position: avgPosition,
+        timestamp: clusterEvents[0].timestamp,
+        severity: severity,
+        count: clusterEvents.length,
+        events: clusterEvents,
+      };
+    }
   }, [displayRange, events, filters]);
 
   // Calculate position percentage (0-100)
@@ -146,19 +230,6 @@ export const Timeline = () => {
   };
 
   const positionPercentage = getPositionPercentage();
-
-  // Calculate event marker positions
-  const getEventPosition = (eventTimestamp: number): number => {
-    if (!displayRange) return 0;
-
-    const { start, end } = displayRange;
-    const range = end - start;
-
-    if (range === 0) return 0;
-
-    const position = ((eventTimestamp - start) / range) * 100;
-    return Math.max(0, Math.min(100, position));
-  };
 
   return (
     <div>
@@ -284,16 +355,12 @@ export const Timeline = () => {
           ))}
         </div>
 
-        {/* Event Markers */}
+        {/* Event Markers (Aggregated) */}
         {displayRange && (
           <div className="absolute inset-0 pointer-events-none">
-            {visibleEvents.map((event) => (
-              <div key={event.id} className="pointer-events-auto">
-                <EventMarker
-                  event={event}
-                  position={getEventPosition(event.timestamp)}
-                  size="md"
-                />
+            {aggregatedMarkers.map((marker) => (
+              <div key={marker.id} className="pointer-events-auto">
+                <AggregatedEventMarker marker={marker} size="md" />
               </div>
             ))}
           </div>
