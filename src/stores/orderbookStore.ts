@@ -19,7 +19,9 @@ const calculateSpread = (bids: PriceLevel[], asks: PriceLevel[]): number => {
   if (bids.length === 0 || asks.length === 0) return 0;
   const bestBid = bids[0][0];
   const bestAsk = asks[0][0];
-  return bestAsk - bestBid;
+  // Spread should always be positive (bestAsk > bestBid in a normal market)
+  // Use Math.abs as a safety measure
+  return Math.abs(bestAsk - bestBid);
 };
 
 const calculateMidPrice = (bids: PriceLevel[], asks: PriceLevel[]): number => {

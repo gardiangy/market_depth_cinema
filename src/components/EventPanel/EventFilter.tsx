@@ -92,7 +92,7 @@ export function EventFilter() {
                       return (
                         <Toggle
                           key={severity}
-                          variant={severity === 'low' ? 'success' : severity === 'medium' ? 'warning' : 'error'}
+                          variant={severity === 'low' ? 'info' : severity === 'medium' ? 'warning' : 'error'}
                           size="sm"
                           pressed={isActive}
                           onPressedChange={(pressed) => setSeverityFilter(severity, pressed)}

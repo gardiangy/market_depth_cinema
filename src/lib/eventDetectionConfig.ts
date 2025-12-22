@@ -15,11 +15,11 @@ export interface EventThresholds {
     high: number;     // BTC volume for high severity
   };
 
-  // Spread Change Detection
+  // Spread Change Detection (absolute dollar thresholds)
   spreadChange: {
-    low: number;      // % change for low severity
-    medium: number;   // % change for medium severity
-    high: number;     // % change for high severity
+    low: number;      // $ change for low severity
+    medium: number;   // $ change for medium severity
+    high: number;     // $ change for high severity
   };
 
   // Liquidity Gap Detection
@@ -27,6 +27,7 @@ export interface EventThresholds {
     low: number;      // % price gap for low severity
     medium: number;   // % price gap for medium severity
     high: number;     // % price gap for high severity
+    maxDepth: number; // Only check top N levels from best bid/ask
   };
 
   // Rapid Cancellations Detection
@@ -45,25 +46,30 @@ export interface EventThresholds {
 
 export const DEFAULT_THRESHOLDS: EventThresholds = {
   largeOrderBTC: {
-    low: 1.0,
-    medium: 5.0,
-    high: 10.0,
+    low: 6.0,     // 6 BTC for low
+    medium: 8.0, // 8 BTC for medium
+    high: 10.0,   // 10 BTC for high
   },
   spreadChange: {
-    low: 0.1,    // 0.1%
-    medium: 0.5, // 0.5%
-    high: 1.0,   // 1.0%
+    // Absolute dollar thresholds for spread change
+    // BTC/USD spread is typically $1-5, changes are usually small
+    low: 2,      // $2 change in spread
+    medium: 5,  // $5 change in spread
+    high: 10,    // $10 change in spread
   },
   liquidityGap: {
-    low: 0.5,    // 0.5%
-    medium: 1.0, // 1.0%
-    high: 2.0,   // 2.0%
+    // Gap between adjacent price levels as % of price
+    // Only meaningful gaps near top of book matter for trading
+    low: 0.15,    // 0.15% = ~$135 gap at $90k
+    medium: 0.3,  // 0.3% = ~$270 gap
+    high: 0.5,    // 0.5% = ~$450 gap
+    maxDepth: 15, // Only check top 15 levels from best bid/ask
   },
   rapidCancellations: {
     timeWindow: 1000, // 1 second
-    low: 10,
-    medium: 20,
-    high: 40,
+    low: 40,     // 40 removals/sec
+    medium: 60,  // 60 removals/sec
+    high: 80,    // 80 removals/sec
   },
   priceBreakthrough: {
     significantLevel: 0.5, // 0.5%
@@ -179,8 +185,8 @@ export function getEventDescription(type: EventType, details: Record<string, unk
     case 'spread_change': {
       const oldSpread = details.oldSpread as number;
       const newSpread = details.newSpread as number;
-      const change = details.changePercent as number;
-      return `Spread ${oldSpread > newSpread ? 'narrowed' : 'widened'} by ${Math.abs(change).toFixed(2)}%`;
+      const direction = details.direction as string;
+      return `Spread ${direction} from $${oldSpread.toFixed(2)} to $${newSpread.toFixed(2)}`;
     }
     case 'liquidity_gap': {
       const gapSize = details.gapPercent as number;

@@ -33,6 +33,10 @@ let previousSnapshot: OrderbookSnapshot | null = null;
 let recentRemovals: Array<{ timestamp: number; side: 'bid' | 'ask' }> = [];
 let significantLevels: number[] = [];
 
+// Cooldown tracking to prevent duplicate events
+const eventCooldowns: Map<string, number> = new Map();
+const COOLDOWN_MS = 5000; // 5 second cooldown for similar events
+
 const REMOVAL_HISTORY_LIMIT = 100; // Keep last 100 removal events
 
 /**
@@ -77,6 +81,65 @@ function cleanupOldRemovals(currentTimestamp: number): void {
 }
 
 /**
+ * Generate a cooldown key for an event to prevent duplicates
+ */
+function getCooldownKey(event: DetectedEvent): string {
+  switch (event.type) {
+    case 'liquidity_gap': {
+      // Round price to nearest $100 to group similar gaps
+      const side = event.details.side as string;
+      const startPrice = Math.round((event.details.startPrice as number) / 100) * 100;
+      return `${event.type}-${side}-${startPrice}`;
+    }
+    case 'spread_change': {
+      // Group by direction (widened/narrowed)
+      const direction = event.details.direction as string;
+      return `${event.type}-${direction}`;
+    }
+    case 'large_order_added':
+    case 'large_order_removed': {
+      // Round price to nearest $50 to group similar price levels
+      const side = event.details.side as string;
+      const price = Math.round((event.details.price as number) / 50) * 50;
+      return `${event.type}-${side}-${price}`;
+    }
+    case 'rapid_cancellations': {
+      // Group by side
+      const side = event.details.side as string;
+      return `${event.type}-${side}`;
+    }
+    default:
+      return `${event.type}-${event.id}`;
+  }
+}
+
+/**
+ * Filter events based on cooldown to prevent duplicates
+ */
+function filterByCooldown(events: DetectedEvent[], currentTimestamp: number): DetectedEvent[] {
+  // Clean up expired cooldowns
+  for (const [key, expiry] of eventCooldowns.entries()) {
+    if (expiry < currentTimestamp) {
+      eventCooldowns.delete(key);
+    }
+  }
+
+  return events.filter(event => {
+    const key = getCooldownKey(event);
+    const cooldownExpiry = eventCooldowns.get(key);
+
+    if (cooldownExpiry && cooldownExpiry > currentTimestamp) {
+      // Still in cooldown, skip this event
+      return false;
+    }
+
+    // Set cooldown for this event type/key
+    eventCooldowns.set(key, currentTimestamp + COOLDOWN_MS);
+    return true;
+  });
+}
+
+/**
  * Handle incoming messages from main thread
  */
 self.onmessage = (event: MessageEvent<WorkerMessage>) => {
@@ -99,12 +162,15 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
         cleanupOldRemovals(current.timestamp);
 
         // Run event detection
-        const events = detectEvents(
+        const rawEvents = detectEvents(
           current,
           previous,
           recentRemovals,
           data.significantLevels ?? significantLevels
         );
+
+        // Filter events by cooldown to prevent duplicates
+        const events = filterByCooldown(rawEvents, current.timestamp);
 
         // Update previous snapshot
         previousSnapshot = current;
@@ -140,6 +206,7 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
         previousSnapshot = null;
         recentRemovals = [];
         significantLevels = [];
+        eventCooldowns.clear();
         break;
       }
 

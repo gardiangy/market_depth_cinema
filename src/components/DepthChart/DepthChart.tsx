@@ -664,7 +664,6 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         </Card>
 
         {pinnedPrice !== null && (
-
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -679,7 +678,23 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
               </TooltipTrigger>
               <TooltipContent side="left">Clear Pinned Price</TooltipContent>
             </Tooltip>
-          
+        )}
+
+        {selectedEventId && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => useEventsStore.getState().selectEvent(null)}
+                  className="text-xs w-full bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
+                >
+                  <X className="size-3 mr-1" />
+                  Clear Event
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Clear Event Selection</TooltipContent>
+            </Tooltip>
         )}
       </div>
 

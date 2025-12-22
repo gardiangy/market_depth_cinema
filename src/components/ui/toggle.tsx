@@ -21,6 +21,8 @@ const toggleVariants = cva(
           'bg-transparent border border-[var(--color-ask)]/50 text-[var(--color-ask)]/70 hover:border-[var(--color-ask)] hover:text-[var(--color-ask)] focus-visible:ring-[var(--color-ask)] data-[state=on]:bg-[var(--color-ask)] data-[state=on]:text-white data-[state=on]:border-[var(--color-ask)] data-[state=on]:shadow-[0_0_12px_rgba(239,68,68,0.4)]',
         warning:
           'bg-transparent border border-[var(--color-mid)]/50 text-[var(--color-mid)]/70 hover:border-[var(--color-mid)] hover:text-[var(--color-mid)] focus-visible:ring-[var(--color-mid)] data-[state=on]:bg-[var(--color-mid)] data-[state=on]:text-white data-[state=on]:border-[var(--color-mid)] data-[state=on]:shadow-[0_0_12px_rgba(251,191,36,0.4)]',
+        info:
+          'bg-transparent border border-[var(--color-primary)]/50 text-[var(--color-primary)]/70 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:ring-[var(--color-primary)] data-[state=on]:bg-[var(--color-primary)] data-[state=on]:text-white data-[state=on]:border-[var(--color-primary)] data-[state=on]:shadow-[0_0_12px_rgba(251,191,36,0.4)]',
       },
       size: {
         default: 'h-9 px-3 min-w-9',

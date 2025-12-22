@@ -69,13 +69,17 @@ export const AggregatedEventListItem = memo(function AggregatedEventListItem({
           return `${volume.toFixed(2)} BTC ${side} removed from $${price.toFixed(2)}`
         }
         case 'spread_change': {
-          const change = e.details.changePercent as number
-          return `Spread changed by ${Math.abs(change).toFixed(2)}%`
+          const oldSpread = e.details.oldSpread as number
+          const newSpread = e.details.newSpread as number
+          const direction = e.details.direction as string
+          return `Spread ${direction} from $${oldSpread.toFixed(2)} to $${newSpread.toFixed(2)}`
         }
         case 'liquidity_gap': {
           const gapSize = e.details.gapPercent as number
+          const startPrice = e.details.startPrice as number
+          const endPrice = e.details.endPrice as number
           const side = e.details.side as 'bid' | 'ask'
-          return `${gapSize.toFixed(2)}% gap in ${side}s`
+          return `${gapSize.toFixed(2)}% gap in ${side}s ($${startPrice.toFixed(0)}-$${endPrice.toFixed(0)})`
         }
         case 'rapid_cancellations': {
           const cancelCount = e.details.count as number
@@ -119,10 +123,20 @@ export const AggregatedEventListItem = memo(function AggregatedEventListItem({
         return `${totalVolume.toFixed(2)} BTC total (${sides.join(', ')})`
       }
       case 'spread_change': {
-        return `${count} spread changes`
+        // Show range of spread changes
+        const firstEvent = groupEvents[0]
+        const lastEvent = groupEvents[groupEvents.length - 1]
+        const startSpread = firstEvent.details.oldSpread as number
+        const endSpread = lastEvent.details.newSpread as number
+        return `${count} changes: $${startSpread.toFixed(2)} → $${endSpread.toFixed(2)}`
       }
       case 'liquidity_gap': {
-        return `${count} liquidity gaps detected`
+        const bidGaps = groupEvents.filter((e) => e.details.side === 'bid').length
+        const askGaps = groupEvents.filter((e) => e.details.side === 'ask').length
+        const parts = []
+        if (bidGaps > 0) parts.push(`${bidGaps} bid`)
+        if (askGaps > 0) parts.push(`${askGaps} ask`)
+        return `${count} gaps detected (${parts.join(', ')})`
       }
       case 'rapid_cancellations': {
         const totalCancelled = groupEvents.reduce(

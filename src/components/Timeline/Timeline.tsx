@@ -355,6 +355,38 @@ export const Timeline = () => {
           ))}
         </div>
 
+        {/* Severity Lane Indicators */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* High severity zone (top) */}
+          <div
+            className="absolute left-0 right-0 h-[1px]"
+            style={{
+              top: '20%',
+              background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3) 10%, rgba(239, 68, 68, 0.3) 90%, transparent)',
+            }}
+          />
+          {/* Medium severity zone (middle) */}
+          <div
+            className="absolute left-0 right-0 h-[1px]"
+            style={{
+              top: '50%',
+              background: 'linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.2) 10%, rgba(245, 158, 11, 0.2) 90%, transparent)',
+            }}
+          />
+          {/* Low severity zone (bottom) */}
+          <div
+            className="absolute left-0 right-0 h-[1px]"
+            style={{
+              top: '80%',
+              background: 'linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2) 10%, rgba(59, 130, 246, 0.2) 90%, transparent)',
+            }}
+          />
+          {/* Severity labels on the left */}
+          <div className="absolute left-1 top-[20%] -translate-y-1/2 text-[8px] font-medium text-red-400/60">H</div>
+          <div className="absolute left-1 top-[50%] -translate-y-1/2 text-[8px] font-medium text-amber-400/60">M</div>
+          <div className="absolute left-1 top-[80%] -translate-y-1/2 text-[8px] font-medium text-blue-400/60">L</div>
+        </div>
+
         {/* Event Markers (Aggregated) */}
         {displayRange && (
           <div className="absolute inset-0 pointer-events-none">

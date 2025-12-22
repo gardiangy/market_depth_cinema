@@ -75,7 +75,7 @@ export function useEventDetection(
   const snapshotHistoryRef = useRef<SnapshotHistoryBuffer>(new SnapshotHistoryBuffer());
   const lastSignificantLevelsUpdateRef = useRef<number>(0);
 
-  const { enabled, updateSignificantLevelsInterval = 30000 } = config;
+  const { enabled, updateSignificantLevelsInterval = 10000 } = config; // 10 seconds for faster warmup
 
   /**
    * Initialize Web Worker

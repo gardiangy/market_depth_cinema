@@ -135,31 +135,40 @@ export function detectLargeOrdersRemoved(
 
 /**
  * Detects significant spread changes
+ * Uses absolute dollar thresholds for reliable detection
  */
 export function detectSpreadChange(
   current: OrderbookSnapshot,
   previous: OrderbookSnapshot | null
 ): DetectedEvent[] {
-  if (!previous || previous.spread === 0) return [];
+  if (!previous) return [];
 
   const events: DetectedEvent[] = [];
   const { spreadChange } = DEFAULT_THRESHOLDS;
 
-  const spreadDiff = current.spread - previous.spread;
-  const changePercent = (spreadDiff / previous.spread) * 100;
-  const absChangePercent = Math.abs(changePercent);
+  // Ensure spreads are positive (safety check)
+  const oldSpread = Math.abs(previous.spread);
+  const newSpread = Math.abs(current.spread);
 
-  if (absChangePercent >= spreadChange.low) {
-    const severity = determineSeverity(absChangePercent, spreadChange);
+  // Skip if spreads seem invalid (e.g., > $500 for BTC is unrealistic)
+  if (oldSpread > 500 || newSpread > 500 || oldSpread === 0) return [];
+
+  const spreadDiff = newSpread - oldSpread;
+  const absSpreadDiff = Math.abs(spreadDiff);
+
+  // Use absolute dollar change for thresholds
+  if (absSpreadDiff >= spreadChange.low) {
+    const severity = determineSeverity(absSpreadDiff, spreadChange);
+
     events.push({
       id: generateEventId(current.timestamp, 'spread_change'),
       type: 'spread_change',
       timestamp: current.timestamp,
       severity,
       details: {
-        oldSpread: previous.spread,
-        newSpread: current.spread,
-        changePercent,
+        oldSpread,
+        newSpread,
+        spreadChange: spreadDiff,
         direction: spreadDiff > 0 ? 'widened' : 'narrowed',
       },
     });
@@ -170,57 +179,78 @@ export function detectSpreadChange(
 
 /**
  * Detects liquidity gaps in the orderbook
+ * Only checks top N levels and reports most significant gap per side
  */
 export function detectLiquidityGaps(
   current: OrderbookSnapshot
 ): DetectedEvent[] {
   const events: DetectedEvent[] = [];
   const { liquidityGap } = DEFAULT_THRESHOLDS;
+  const maxDepth = liquidityGap.maxDepth || 15;
 
-  // Check for gaps in bids
-  for (let i = 0; i < current.bids.length - 1; i++) {
+  // Track largest gap per side (only report most significant)
+  let largestBidGap: { gapPercent: number; startPrice: number; endPrice: number } | null = null;
+  let largestAskGap: { gapPercent: number; startPrice: number; endPrice: number } | null = null;
+
+  // Check for gaps in bids (only top N levels)
+  const bidsToCheck = Math.min(current.bids.length - 1, maxDepth);
+  for (let i = 0; i < bidsToCheck; i++) {
     const [upperPrice] = current.bids[i];
     const [lowerPrice] = current.bids[i + 1];
     const gapPercent = ((upperPrice - lowerPrice) / lowerPrice) * 100;
 
     if (gapPercent >= liquidityGap.low) {
-      const severity = determineSeverity(gapPercent, liquidityGap);
-      events.push({
-        id: generateEventId(current.timestamp, 'liquidity_gap'),
-        type: 'liquidity_gap',
-        timestamp: current.timestamp,
-        severity,
-        details: {
-          side: 'bid',
-          startPrice: lowerPrice,
-          endPrice: upperPrice,
-          gapPercent,
-        },
-      });
+      if (!largestBidGap || gapPercent > largestBidGap.gapPercent) {
+        largestBidGap = { gapPercent, startPrice: lowerPrice, endPrice: upperPrice };
+      }
     }
   }
 
-  // Check for gaps in asks
-  for (let i = 0; i < current.asks.length - 1; i++) {
+  // Check for gaps in asks (only top N levels)
+  const asksToCheck = Math.min(current.asks.length - 1, maxDepth);
+  for (let i = 0; i < asksToCheck; i++) {
     const [lowerPrice] = current.asks[i];
     const [upperPrice] = current.asks[i + 1];
     const gapPercent = ((upperPrice - lowerPrice) / lowerPrice) * 100;
 
     if (gapPercent >= liquidityGap.low) {
-      const severity = determineSeverity(gapPercent, liquidityGap);
-      events.push({
-        id: generateEventId(current.timestamp, 'liquidity_gap'),
-        type: 'liquidity_gap',
-        timestamp: current.timestamp,
-        severity,
-        details: {
-          side: 'ask',
-          startPrice: lowerPrice,
-          endPrice: upperPrice,
-          gapPercent,
-        },
-      });
+      if (!largestAskGap || gapPercent > largestAskGap.gapPercent) {
+        largestAskGap = { gapPercent, startPrice: lowerPrice, endPrice: upperPrice };
+      }
     }
+  }
+
+  // Only emit the largest gap per side
+  if (largestBidGap) {
+    const severity = determineSeverity(largestBidGap.gapPercent, liquidityGap);
+    events.push({
+      id: generateEventId(current.timestamp, 'liquidity_gap'),
+      type: 'liquidity_gap',
+      timestamp: current.timestamp,
+      severity,
+      details: {
+        side: 'bid',
+        startPrice: largestBidGap.startPrice,
+        endPrice: largestBidGap.endPrice,
+        gapPercent: largestBidGap.gapPercent,
+      },
+    });
+  }
+
+  if (largestAskGap) {
+    const severity = determineSeverity(largestAskGap.gapPercent, liquidityGap);
+    events.push({
+      id: generateEventId(current.timestamp, 'liquidity_gap'),
+      type: 'liquidity_gap',
+      timestamp: current.timestamp,
+      severity,
+      details: {
+        side: 'ask',
+        startPrice: largestAskGap.startPrice,
+        endPrice: largestAskGap.endPrice,
+        gapPercent: largestAskGap.gapPercent,
+      },
+    });
   }
 
   return events;

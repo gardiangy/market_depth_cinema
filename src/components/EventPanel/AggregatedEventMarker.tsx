@@ -86,33 +86,49 @@ export const AggregatedEventMarker = memo(function AggregatedEventMarker({
   const severityConfig = {
     low: {
       color: '#3b82f6', // blue
-      glowColor: 'rgba(59, 130, 246, 0.2)',
-      glowSpread: 'rgba(59, 130, 246, 0.1)',
+      colorBright: '#60a5fa',
+      colorDark: '#1d4ed8',
+      glowColor: 'rgba(59, 130, 246, 0.4)',
+      glowSpread: 'rgba(59, 130, 246, 0.2)',
     },
     medium: {
       color: '#f59e0b', // amber
-      glowColor: 'rgba(245, 158, 11, 0.2)',
-      glowSpread: 'rgba(245, 158, 11, 0.1)',
+      colorBright: '#fbbf24',
+      colorDark: '#d97706',
+      glowColor: 'rgba(245, 158, 11, 0.4)',
+      glowSpread: 'rgba(245, 158, 11, 0.2)',
     },
     high: {
       color: '#ef4444', // red
-      glowColor: 'rgba(239, 68, 68, 0.2)',
-      glowSpread: 'rgba(239, 68, 68, 0.1)',
+      colorBright: '#f87171',
+      colorDark: '#dc2626',
+      glowColor: 'rgba(239, 68, 68, 0.5)',
+      glowSpread: 'rgba(239, 68, 68, 0.3)',
     },
   }
 
   const config = severityConfig[marker.severity]
   const isSingleEvent = marker.count === 1
 
-  // Size based on count (capped)
-  const baseSize = size === 'sm' ? 8 : 10
-  const markerSize = isSingleEvent ? baseSize : Math.min(baseSize + Math.log2(marker.count) * 3, 20)
+  // Size based on severity and count
+  // When showing count inside, marker needs to be larger
+  const baseSizeByServerity = {
+    low: size === 'sm' ? 8 : 10,
+    medium: size === 'sm' ? 9 : 12,
+    high: size === 'sm' ? 10 : 14,
+  }
+  const baseSize = baseSizeByServerity[marker.severity]
+
+  // For multiple events, make marker large enough to show count inside
+  const markerSize = isSingleEvent
+    ? baseSize
+    : Math.max(18, Math.min(baseSize + Math.log2(marker.count) * 3, 26))
 
   // Vertical offset based on severity (high at top, medium in middle, low at bottom)
   const verticalPosition = {
-    high: '25%',
+    high: '20%',
     medium: '50%',
-    low: '75%',
+    low: '80%',
   }
 
   const severityBadgeVariants = {
@@ -121,39 +137,47 @@ export const AggregatedEventMarker = memo(function AggregatedEventMarker({
     high: 'high' as const,
   }
 
+  // Determine if this marker should pulse (high severity or selected)
+  const shouldPulse = marker.severity === 'high' && !isSelected
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
           onClick={handleClick}
-          className="absolute outline-none transition-transform duration-150 hover:scale-125 active:scale-90 flex items-center justify-center"
+          className={`absolute outline-none transition-all duration-200 hover:scale-125 active:scale-95 flex items-center justify-center ${
+            shouldPulse ? 'animate-pulse' : ''
+          }`}
           style={{
             left: `${marker.position}%`,
             top: verticalPosition[marker.severity],
-            transform: `translate(-50%, -50%) scale(${isSelected ? 1.3 : 1})`,
+            transform: `translate(-50%, -50%) scale(${isSelected ? 1.4 : 1})`,
             width: markerSize,
             height: markerSize,
-            backgroundColor: config.color,
+            // Radial gradient for 3D depth effect
+            background: `radial-gradient(circle at 30% 30%, ${config.colorBright}, ${config.color} 50%, ${config.colorDark})`,
             borderRadius: '50%',
-            border: isSelected ? '2px solid white' : 'none',
+            border: isSelected
+              ? '2px solid white'
+              : `1px solid ${config.colorBright}`,
+            // Enhanced glow - all markers get some glow
             boxShadow: isSelected
-              ? `0 0 8px ${config.glowColor}, 0 0 16px ${config.glowSpread}, 0 0 24px ${config.glowSpread}`
-              : marker.severity === 'high' || marker.count > 3
-              ? `0 0 8px ${config.glowColor}, 0 0 16px ${config.glowSpread}`
-              : 'none',
+              ? `0 0 0 3px ${config.glowSpread}, 0 0 12px ${config.glowColor}, 0 0 24px ${config.glowSpread}, inset 0 1px 2px rgba(255,255,255,0.3)`
+              : `0 0 ${marker.severity === 'high' ? '12px' : '6px'} ${config.glowColor}, 0 0 ${marker.severity === 'high' ? '20px' : '10px'} ${config.glowSpread}, inset 0 1px 2px rgba(255,255,255,0.2)`,
             cursor: 'pointer',
-            zIndex: isSelected ? 30 : marker.severity === 'high' ? 15 : 10,
+            zIndex: isSelected ? 30 : marker.severity === 'high' ? 20 : marker.severity === 'medium' ? 15 : 10,
           }}
           aria-label={`${marker.count} event${marker.count > 1 ? 's' : ''} at ${formatTime(marker.timestamp)}`}
         >
-          {/* Count badge for multiple events */}
+          {/* Count shown inside marker for multiple events */}
           {marker.count > 1 && (
             <span
-              className="absolute -top-2 -right-2 min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold rounded-full"
+              className="font-bold select-none"
               style={{
-                backgroundColor: 'var(--surface-4)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--glass-border-color)',
+                fontSize: marker.count > 99 ? '7px' : marker.count > 9 ? '9px' : '10px',
+                color: '#fff',
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                letterSpacing: '-0.5px',
               }}
             >
               {marker.count > 99 ? '99+' : marker.count}
