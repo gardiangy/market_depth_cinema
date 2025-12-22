@@ -592,14 +592,6 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         g.select('.crosshair-y').attr('opacity', 0);
         setTooltip(null);
       })
-      .on('wheel', function(event) {
-        event.preventDefault();
-        const delta = event.deltaY;
-        setZoomLevel((prev) => {
-          const newZoom = delta > 0 ? prev / 1.1 : prev * 1.1;
-          return Math.max(0.5, Math.min(10, newZoom));
-        });
-      })
       .on('click', function(event) {
         const [mouseX] = d3.pointer(event);
         const price = xScale.invert(mouseX);
@@ -643,6 +635,27 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
     }
   }, [updateChart]);
 
+  // Wheel zoom handler - use native event listener with passive: false to allow preventDefault
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const delta = event.deltaY;
+      setZoomLevel((prev) => {
+        const newZoom = delta > 0 ? prev / 1.1 : prev * 1.1;
+        return Math.max(0.5, Math.min(10, newZoom));
+      });
+    };
+
+    svg.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      svg.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   useEffect(() => {
     return () => {
       // Cleanup on unmount
@@ -662,7 +675,6 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         gRef.current.selectAll('*').interrupt();
         gRef.current.select('.overlay').on('mousemove', null);
         gRef.current.select('.overlay').on('mouseleave', null);
-        gRef.current.select('.overlay').on('wheel', null);
         gRef.current.select('.overlay').on('click', null);
       }
 

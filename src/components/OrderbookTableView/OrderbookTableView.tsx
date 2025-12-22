@@ -129,40 +129,59 @@ const OrderRow = ({ level, side }: OrderRowProps) => {
   );
 };
 
+// Flash value component that uses CSS animation with key changes (no setTimeout)
+const FlashValue = ({
+  value,
+  formatFn,
+  baseClass,
+  upClass,
+  downClass,
+}: {
+  value: number;
+  formatFn: (v: number) => string;
+  baseClass: string;
+  upClass: string;
+  downClass: string;
+}) => {
+  const prevValueRef = useRef(value);
+  const [flashKey, setFlashKey] = useState(0);
+  const [direction, setDirection] = useState<'up' | 'down' | null>(null);
+
+  useEffect(() => {
+    if (prevValueRef.current !== value && prevValueRef.current > 0) {
+      setDirection(value > prevValueRef.current ? 'up' : 'down');
+      setFlashKey((k) => k + 1);
+    }
+    prevValueRef.current = value;
+  }, [value]);
+
+  return (
+    <span
+      key={flashKey}
+      className={`${baseClass} ${direction === 'up' ? upClass : ''} ${direction === 'down' ? downClass : ''}`}
+      style={{
+        animation: flashKey > 0 ? 'flash-pulse 300ms ease-out' : 'none',
+      }}
+      onAnimationEnd={() => setDirection(null)}
+    >
+      {formatFn(value)}
+    </span>
+  );
+};
+
 const SpreadIndicator = ({ spread, midPrice }: { spread: number; midPrice: number }) => {
   const spreadPercentage = midPrice > 0 ? (spread / midPrice) * 100 : 0;
 
-  // Track previous values to detect changes
-  const prevMidPriceRef = useRef(midPrice);
-  const prevSpreadRef = useRef(spread);
-
-  // Flash state for animations
-  const [midPriceFlash, setMidPriceFlash] = useState<'up' | 'down' | null>(null);
-  const [spreadFlash, setSpreadFlash] = useState<'up' | 'down' | null>(null);
-
-  // Detect changes and trigger flash
-  useEffect(() => {
-    if (prevMidPriceRef.current !== midPrice && prevMidPriceRef.current > 0) {
-      setMidPriceFlash(midPrice > prevMidPriceRef.current ? 'up' : 'down');
-      const timer = setTimeout(() => setMidPriceFlash(null), 300);
-      prevMidPriceRef.current = midPrice;
-      return () => clearTimeout(timer);
-    }
-    prevMidPriceRef.current = midPrice;
-  }, [midPrice]);
-
-  useEffect(() => {
-    if (prevSpreadRef.current !== spread && prevSpreadRef.current > 0) {
-      setSpreadFlash(spread > prevSpreadRef.current ? 'up' : 'down');
-      const timer = setTimeout(() => setSpreadFlash(null), 300);
-      prevSpreadRef.current = spread;
-      return () => clearTimeout(timer);
-    }
-    prevSpreadRef.current = spread;
-  }, [spread]);
-
   return (
-    <div className="relative py-3 px-3">
+    <div className="relative py-3 px-3 bg-[var(--surface-1)]/50">
+      {/* CSS animation keyframes */}
+      <style>{`
+        @keyframes flash-pulse {
+          0% { transform: scale(1.08); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
+
       {/* Divider line with glow */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-[var(--color-mid)] to-transparent opacity-30" />
 
@@ -171,16 +190,13 @@ const SpreadIndicator = ({ spread, midPrice }: { spread: number; midPrice: numbe
         {/* Mid price */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-[var(--text-tertiary)]">Mid</span>
-          <span
-            className={`
-              text-sm font-mono font-bold transition-all duration-150
-              ${midPriceFlash === 'up' ? 'text-[var(--color-bid-bright)] scale-105' : ''}
-              ${midPriceFlash === 'down' ? 'text-[var(--color-ask-bright)] scale-105' : ''}
-              ${!midPriceFlash ? 'text-[var(--color-mid-bright)] scale-100' : ''}
-            `}
-          >
-            ${formatPrice(midPrice)}
-          </span>
+          <FlashValue
+            value={midPrice}
+            formatFn={(v) => `$${formatPrice(v)}`}
+            baseClass="text-sm font-mono font-bold text-[var(--color-mid-bright)] transition-colors duration-150"
+            upClass="!text-[var(--color-bid-bright)]"
+            downClass="!text-[var(--color-ask-bright)]"
+          />
         </div>
 
         {/* Separator dot */}
@@ -189,16 +205,13 @@ const SpreadIndicator = ({ spread, midPrice }: { spread: number; midPrice: numbe
         {/* Spread */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-[var(--text-tertiary)]">Spread</span>
-          <span
-            className={`
-              text-sm font-mono font-semibold transition-all duration-150
-              ${spreadFlash === 'up' ? 'text-[var(--color-ask-bright)] scale-105' : ''}
-              ${spreadFlash === 'down' ? 'text-[var(--color-bid-bright)] scale-105' : ''}
-              ${!spreadFlash ? 'text-[var(--color-mid)] scale-100' : ''}
-            `}
-          >
-            ${formatPrice(spread)}
-          </span>
+          <FlashValue
+            value={spread}
+            formatFn={(v) => `$${formatPrice(v)}`}
+            baseClass="text-sm font-mono font-semibold text-[var(--color-mid)] transition-colors duration-150"
+            upClass="!text-[var(--color-ask-bright)]"
+            downClass="!text-[var(--color-bid-bright)]"
+          />
           <span className="text-xs font-mono text-[var(--text-tertiary)]">
             ({spreadPercentage.toFixed(3)}%)
           </span>
