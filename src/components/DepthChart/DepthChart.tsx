@@ -3,7 +3,8 @@ import * as d3 from 'd3'
 import { Plus, Minus, X } from 'lucide-react'
 import type { PriceLevel } from '../../types'
 import { useEventsStore } from '../../stores/eventsStore'
-import { EVENT_METADATA } from '../../lib/eventDetectionConfig'
+import { EVENT_METADATA, getEventDescription } from '../../lib/eventDetectionConfig'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -42,6 +43,30 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
   const selectedEventId = useEventsStore((state) => state.selectedEventId);
   const getEventById = useEventsStore((state) => state.getEventById);
   const selectedEvent = selectedEventId ? getEventById(selectedEventId) : null;
+
+  // Calculate x position for a given price (for tooltip positioning)
+  const getPriceXPosition = useCallback((price: number): number | null => {
+    if (bids.length === 0 || asks.length === 0 || dimensions.width === 0) return null;
+
+    const margin = { left: 60, right: 60 };
+    const innerWidth = dimensions.width - margin.left - margin.right;
+
+    const allPrices = [...bids.map(d => d[0]), ...asks.map(d => d[0])];
+    const minPrice = Math.min(...allPrices);
+    const maxPrice = Math.max(...allPrices);
+    const priceRange = maxPrice - minPrice;
+    const center = (minPrice + maxPrice) / 2;
+    const zoomedRange = priceRange / zoomLevel;
+
+    const domainMin = center - zoomedRange / 2;
+    const domainMax = center + zoomedRange / 2;
+
+    // Convert price to pixel position
+    const xPos = margin.left + ((price - domainMin) / (domainMax - domainMin)) * innerWidth;
+
+    // Clamp to chart bounds
+    return Math.max(margin.left, Math.min(dimensions.width - margin.right, xPos));
+  }, [bids, asks, dimensions.width, zoomLevel]);
 
   const initializeChart = useCallback((width: number, height: number) => {
     if (!svgRef.current || !containerRef.current) return;
@@ -716,6 +741,69 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
           </div>
         </Card>
       )}
+
+      {/* Pinned Price Tooltip */}
+      {pinnedPrice && getPriceXPosition(pinnedPrice) && (
+        <Card
+          variant="glass"
+          className="absolute pointer-events-none p-2 px-3"
+          style={{
+            left: getPriceXPosition(pinnedPrice)!,
+            top: 60,
+            transform: 'translateX(-50%)',
+            borderLeft: '3px solid var(--color-secondary)',
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--text-tertiary)]">Pinned:</span>
+            <span className="font-mono font-semibold text-sm text-[var(--color-secondary-bright)]">
+              ${pinnedPrice.toFixed(2)}
+            </span>
+          </div>
+        </Card>
+      )}
+
+      {/* Selected Event Tooltip */}
+      {selectedEvent && (() => {
+        const eventPrice = selectedEvent.details.price as number | undefined;
+        const xPos = eventPrice ? getPriceXPosition(eventPrice) : null;
+        return (
+          <Card
+            variant="glass"
+            className="absolute pointer-events-none p-3 max-w-[280px]"
+            style={{
+              left: xPos ?? '50%',
+              top: pinnedPrice ? 110 : 60,
+              transform: 'translateX(-50%)',
+              borderLeft: `3px solid ${EVENT_METADATA[selectedEvent.type].color[selectedEvent.severity]}`,
+            }}
+          >
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm text-[var(--text-primary)]">
+                  {EVENT_METADATA[selectedEvent.type].label}
+                </span>
+                <Badge
+                  variant={selectedEvent.severity as 'low' | 'medium' | 'high'}
+                  className="capitalize text-xs"
+                >
+                  {selectedEvent.severity}
+                </Badge>
+              </div>
+              <div className="text-xs text-[var(--text-secondary)]">
+                {getEventDescription(selectedEvent.type, selectedEvent.details)}
+              </div>
+              <div className="text-xs font-mono text-[var(--text-tertiary)]">
+                {new Date(selectedEvent.timestamp).toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
     </div>
   )
 }
