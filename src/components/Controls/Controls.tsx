@@ -41,9 +41,9 @@ export const Controls = () => {
   }
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
       {/* Mode Indicator */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         <div className="relative size-3 mr-2">
           {/* Inner core - always visible */}
           <div
@@ -168,10 +168,10 @@ export const Controls = () => {
 
       {/* Playback Speed */}
       {mode === 'replay' && (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[var(--text-secondary)]">Speed:</span>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <span className="hidden sm:inline text-sm text-[var(--text-secondary)]">Speed:</span>
           <Select value={String(playbackSpeed)} onValueChange={handleSpeedChange}>
-            <SelectTrigger className="w-20">
+            <SelectTrigger className="w-16 sm:w-20">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -189,8 +189,8 @@ export const Controls = () => {
       {mode === 'replay' && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="success" onClick={goLive} className="ml-auto glass-shimmer">
-              GO LIVE
+            <Button variant="success" size="sm" onClick={goLive} className="glass-shimmer text-xs sm:text-sm">
+              <span className="hidden sm:inline">GO </span>LIVE
             </Button>
           </TooltipTrigger>
           <TooltipContent>Return to live mode (L)</TooltipContent>

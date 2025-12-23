@@ -688,9 +688,9 @@ const DepthChart = ({ bids, asks, midPrice, spread }: DepthChartProps) => {
     <div ref={containerRef} className="w-full h-full relative">
       <svg ref={svgRef} className="w-full h-full" />
 
-      {/* Zoom Controls */}
-      <div className="absolute top-2 right-2 flex flex-col gap-2 z-10">
-        <Card variant="glass" className="p-2 flex flex-row gap-1">
+      {/* Zoom Controls - positioned lower on mobile to avoid playback controls overlap */}
+      <div className="absolute top-16 sm:top-2 right-2 flex flex-col gap-2 z-10">
+        <Card variant="glass" className="p-1.5 sm:p-2 flex flex-row gap-0.5 sm:gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon-sm" onClick={handleZoomIn}>
