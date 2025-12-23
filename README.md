@@ -17,9 +17,10 @@ Cryptocurrency traders analyzing market depth face a critical limitation: **orde
 ## Key Features
 
 - **Time-Travel Playback** — Rewind, pause, fast-forward (0.1x to 10x) through recorded orderbook history
-- **Real-Time Event Detection** — Automatic identification of large orders (>1 BTC), spread changes, liquidity gaps, and rapid cancellations via Web Worker
+- **Real-Time Event Detection** — Automatic identification of large orders, spread changes, liquidity gaps, and rapid cancellations via Web Worker
 - **Interactive Depth Chart** — D3.js visualization with cumulative volume, zoom controls, and price pinning
-- **Heatmap Overlay** — Toggle liquidity concentration view showing volume distribution across $10 price buckets
+- **Live Orderbook Table** — Alternative view showing real-time bid/ask levels with volume and price data
+- **Heatmap Overlay** — Toggle liquidity concentration view showing volume distribution across price buckets
 - **Timeline with Event Markers** — Severity-colored markers aggregated to prevent overlap, click to jump to any event
 - **Keyboard-First UX** — Full keyboard navigation: Space (play/pause), arrows (scrub), N/P (next/prev event), L (go live)
 
@@ -103,6 +104,72 @@ Open http://localhost:5173 in your browser.
 | UI Components | Radix UI |
 | WebSocket | reconnecting-websocket |
 | Virtualization | react-window |
+
+## Configuration
+
+### Event Detection Thresholds
+
+Customize event sensitivity in `src/lib/eventDetectionConfig.ts`. For detailed documentation on all event types, thresholds, and architecture, see [Event Detection](docs/EVENT_DETECTION.md).
+
+```typescript
+export const DEFAULT_THRESHOLDS: EventThresholds = {
+  // Large order detection (BTC volume)
+  largeOrderBTC: {
+    low: 6.0,      // 6 BTC triggers low severity
+    medium: 8.0,   // 8 BTC triggers medium severity
+    high: 10.0,    // 10 BTC triggers high severity
+  },
+
+  // Spread change detection (absolute USD)
+  spreadChange: {
+    low: 2,        // $2 change in spread
+    medium: 5,     // $5 change
+    high: 10,      // $10 change
+  },
+
+  // Liquidity gap detection (% of price)
+  liquidityGap: {
+    low: 0.15,     // 0.15% gap (~$130 at $87k)
+    medium: 0.3,   // 0.3% gap
+    high: 0.5,     // 0.5% gap
+    maxDepth: 15,  // Only check top 15 levels
+  },
+
+  // Rapid cancellations (orders per second)
+  rapidCancellations: {
+    timeWindow: 1000,  // 1 second window
+    low: 40,           // 40 cancellations/sec
+    medium: 60,        // 60 cancellations/sec
+    high: 80,          // 80 cancellations/sec
+  },
+};
+```
+
+### Chart Configuration
+
+Adjust chart behavior in `src/lib/chartConfig.ts`:
+
+```typescript
+// Zoom limits and speed
+export const ZOOM_CONFIG = {
+  min: 0.5,        // Maximum zoom out (50%)
+  max: 10,         // Maximum zoom in (1000%)
+  step: 1.2,       // Zoom button increment
+  wheelStep: 1.1,  // Mouse wheel increment
+};
+
+// Update frequency (lower = smoother but more CPU)
+export const CHART_UPDATE_THROTTLE = 500; // milliseconds
+```
+
+### Price Aggregation
+
+Configure orderbook grouping in `src/lib/orderbookAggregation.ts`:
+
+```typescript
+// Price bucket size for depth chart
+export const DEFAULT_PRICE_STEP = 10; // $10 buckets
+```
 
 ## Future Enhancements
 
