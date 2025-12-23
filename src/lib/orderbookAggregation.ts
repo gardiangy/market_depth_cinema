@@ -1,4 +1,4 @@
-import type { PriceLevel } from '../types';
+import type { PriceLevel, DepthPoint } from '../types';
 
 // Default price step for aggregation ($10 buckets)
 export const DEFAULT_PRICE_STEP = 10;
@@ -55,4 +55,21 @@ export function aggregateOrderbook(
     bids: aggregateLevels(bids, step, 'bid'),
     asks: aggregateLevels(asks, step, 'ask'),
   };
+}
+
+/**
+ * Calculate cumulative depth from price levels.
+ * Used for depth chart visualization - converts flat price levels
+ * to cumulative volume at each price point.
+ */
+export function calculateDepth(levels: PriceLevel[]): DepthPoint[] {
+  let cumulative = 0;
+  const depth: DepthPoint[] = [];
+
+  for (const [price, volume] of levels) {
+    cumulative += volume;
+    depth.push({ price, cumulative });
+  }
+
+  return depth;
 }

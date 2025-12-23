@@ -2,7 +2,7 @@ import type { OrderbookSnapshot } from '../types';
 
 /**
  * Circular buffer for storing orderbook snapshots in memory.
- * Capacity: 6000 snapshots (~10 minutes at 100ms intervals)
+ * Capacity: 6000 snapshots (~100 minutes at 1000ms intervals)
  */
 export class CircularBuffer {
   private buffer: OrderbookSnapshot[];

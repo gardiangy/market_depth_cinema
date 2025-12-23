@@ -35,13 +35,6 @@
   --glass-border-color: rgba(255, 255, 255, 0.08);
   --glass-border-color-bright: rgba(255, 255, 255, 0.15);
 
-  /* Highlight for depth - top edge shimmer */
-  --glass-highlight: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0) 50%
-  );
-
   /* ==========================================
      SEMANTIC ACCENT COLORS - Trading Theme
      ========================================== */
@@ -274,14 +267,4 @@
 
   /* Border radius */
   --radius: 0.5rem;
-
-  /* Sidebar (if needed) */
-  --sidebar-background: 228 14% 3%;
-  --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 217 91% 60%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 228 14% 10%;
-  --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-border: 228 14% 15%;
-  --sidebar-ring: 217 91% 60%;
 }

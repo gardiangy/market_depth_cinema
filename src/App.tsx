@@ -59,14 +59,6 @@ function App() {
       <header className="flex-none p-4 border-b border-[var(--glass-border-color)] bg-gradient-to-b from-[var(--glass-bg-elevated)] to-[var(--glass-bg-base)] backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <div className="relative group">
-            {/* Animated gradient background behind title */}
-            <div
-              className="absolute -inset-4 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-xl"
-              style={{
-                background:
-                  'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.2) 50%, transparent 70%)',
-              }}
-            />
             <h1 className="text-2xl font-bold relative z-10 text-[var(--text-primary)]">
               Market Depth Cinema
             </h1>
@@ -146,7 +138,6 @@ function App() {
                     asks={asks}
                     midPrice={midPrice}
                     spread={spread}
-                    showHeatmap={false}
                   />
                 </motion.div>
               ) : (

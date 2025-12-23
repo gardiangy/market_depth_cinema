@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import * as d3 from 'd3'
-import { Plus, Minus, X } from 'lucide-react'
-import type { PriceLevel } from '../../types'
+import { Plus, Minus, X, Layers } from 'lucide-react'
+import type { PriceLevel, DepthPoint } from '../../types'
 import { useEventsStore } from '../../stores/eventsStore'
 import { EVENT_METADATA, getEventDescription } from '../../lib/eventDetectionConfig'
-import { aggregateOrderbook, DEFAULT_PRICE_STEP } from '../../lib/orderbookAggregation'
+import { aggregateOrderbook, calculateDepth, DEFAULT_PRICE_STEP } from '../../lib/orderbookAggregation'
+import { getChartTheme } from '../../lib/cssUtils'
+import { CHART_MARGINS, DEPTH_GRADIENTS, HEATMAP_COLORS, ZOOM_CONFIG, CHART_UPDATE_THROTTLE } from '../../lib/chartConfig'
+import { formatTime } from '@/lib/formatters'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -19,15 +22,9 @@ interface DepthChartProps {
   asks: PriceLevel[];
   midPrice: number;
   spread: number;
-  showHeatmap?: boolean;
 }
 
-interface DepthPoint {
-  price: number;
-  cumulative: number;
-}
-
-const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: DepthChartProps) => {
+const DepthChart = ({ bids, asks, midPrice, spread }: DepthChartProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
@@ -36,9 +33,9 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
   const [tooltip, setTooltip] = useState<{ x: number; y: number; price: number; volume: number } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [pinnedPrice, setPinnedPrice] = useState<number | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const lastUpdateTime = useRef(0);
   const animationFrame = useRef<number | null>(null);
-  const pulseAnimationRef = useRef<d3.Selection<SVGCircleElement, unknown, null, undefined> | null>(null);
 
   // Event selection state
   const selectedEventId = useEventsStore((state) => state.selectedEventId);
@@ -114,13 +111,11 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
     svg.selectAll('*').interrupt();
     svg.selectAll('*').remove();
 
-    const margin = { top: 20, right: 60, bottom: 40, left: 60 };
-
     svg.attr('width', width).attr('height', height);
 
     const g = svg
       .append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
+      .attr('transform', `translate(${CHART_MARGINS.left},${CHART_MARGINS.top})`);
 
     gRef.current = g;
 
@@ -136,10 +131,10 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
     bidGradient.append('stop')
       .attr('offset', '0%')
-      .attr('stop-color', 'rgba(34, 197, 94, 0.4)');
+      .attr('stop-color', DEPTH_GRADIENTS.bid.start);
     bidGradient.append('stop')
       .attr('offset', '100%')
-      .attr('stop-color', 'rgba(34, 197, 94, 0.05)');
+      .attr('stop-color', DEPTH_GRADIENTS.bid.end);
 
     const askGradient = defs
       .append('linearGradient')
@@ -151,10 +146,10 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
     askGradient.append('stop')
       .attr('offset', '0%')
-      .attr('stop-color', 'rgba(239, 68, 68, 0.4)');
+      .attr('stop-color', DEPTH_GRADIENTS.ask.start);
     askGradient.append('stop')
       .attr('offset', '100%')
-      .attr('stop-color', 'rgba(239, 68, 68, 0.05)');
+      .attr('stop-color', DEPTH_GRADIENTS.ask.end);
 
     g.append('g').attr('class', 'heatmap-bids');
     g.append('g').attr('class', 'heatmap-asks');
@@ -186,8 +181,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
     if (aggregatedBids.length === 0 || aggregatedAsks.length === 0) return;
 
     const now = Date.now();
-    // Throttle to 250ms - no transitions so we can be less frequent
-    if (now - lastUpdateTime.current < 250) {
+    if (now - lastUpdateTime.current < CHART_UPDATE_THROTTLE) {
       if (animationFrame.current) {
         cancelAnimationFrame(animationFrame.current);
       }
@@ -198,21 +192,13 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
     const g = gRef.current;
 
-    // Get CSS variables from document root for consistent theming
-    const rootStyles = getComputedStyle(document.documentElement);
-    const colorBid = rootStyles.getPropertyValue('--color-bid').trim() || '#10b981';
-    const colorAsk = rootStyles.getPropertyValue('--color-ask').trim() || '#ef4444';
-    const colorMid = rootStyles.getPropertyValue('--color-mid-bright').trim() || '#fbbf24';
-    const colorSecondary = rootStyles.getPropertyValue('--color-secondary').trim() || '#8b5cf6';
-    const textSecondary = rootStyles.getPropertyValue('--text-secondary').trim() || '#a3a3a3';
-    const textTertiary = rootStyles.getPropertyValue('--text-tertiary').trim() || '#737373';
-    const surfaceBorder = rootStyles.getPropertyValue('--surface-4').trim() || '#404040';
+    // Get theme colors from CSS variables
+    const theme = getChartTheme();
 
     g.selectAll('*').interrupt();
 
-    const margin = { top: 20, right: 60, bottom: 40, left: 60 };
-    const innerWidth = dimensions.width - margin.left - margin.right;
-    const innerHeight = dimensions.height - margin.top - margin.bottom;
+    const innerWidth = Math.abs(dimensions.width - CHART_MARGINS.left - CHART_MARGINS.right);
+    const innerHeight = Math.abs(dimensions.height - CHART_MARGINS.top - CHART_MARGINS.bottom);
 
     // Use aggregated data for smoother depth curves
     const bidDepth = calculateDepth(aggregatedBids);
@@ -249,8 +235,8 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
       .transition()
       .duration(150)
       .attr('d', area)
-      .attr('fill', 'url(#bidGradient)')
-      .attr('stroke', colorBid)
+      .attr('fill', showHeatmap ? 'none' : 'url(#bidGradient)')
+      .attr('stroke', theme.colorBid)
       .attr('stroke-width', 2);
 
     g.select<SVGPathElement>('.ask-area')
@@ -258,8 +244,8 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
       .transition()
       .duration(150)
       .attr('d', area)
-      .attr('fill', 'url(#askGradient)')
-      .attr('stroke', colorAsk)
+      .attr('fill', showHeatmap ? 'none' : 'url(#askGradient)')
+      .attr('stroke', theme.colorAsk)
       .attr('stroke-width', 2);
 
     if (bids.length > 0 && asks.length > 0) {
@@ -289,20 +275,25 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
       const bidColorScale = d3.scaleLinear<string>()
         .domain([0, maxBidVolume])
-        .range(['rgba(34, 197, 94, 0)', 'rgba(34, 197, 94, 0.6)']);
+        .range([HEATMAP_COLORS.bid.min, HEATMAP_COLORS.bid.max]);
 
       const askColorScale = d3.scaleLinear<string>()
         .domain([0, maxAskVolume])
-        .range(['rgba(239, 68, 68, 0)', 'rgba(239, 68, 68, 0.6)']);
+        .range([HEATMAP_COLORS.ask.min, HEATMAP_COLORS.ask.max]);
 
-      const barWidth = Math.max(1, Math.abs(innerWidth / (aggregatedBids.length + aggregatedAsks.length)));
+      // Calculate bar width based on price step ($10 buckets)
+      // Each bar should span exactly one price bucket
+      const priceStep = DEFAULT_PRICE_STEP;
+      const barWidthPx = Math.abs(xScale(priceStep) - xScale(0));
 
       const bidHeatmap = g.select('.heatmap-bids')
         .selectAll<SVGRectElement, PriceLevel>('rect')
-        .data(aggregatedBids.slice(0, 25), (d) => `bid-${d[0]}`);
+        .data(aggregatedBids, (d) => `bid-${d[0]}`);
 
       bidHeatmap.exit().remove();
 
+      // Bids are rounded DOWN, so bucket 97650 contains orders from 97650-97659.99
+      // Bar should start at price and extend to price + step
       bidHeatmap.enter()
         .append('rect')
         .merge(bidHeatmap)
@@ -310,28 +301,30 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         .duration(150)
         .attr('x', (d) => xScale(d[0]))
         .attr('y', 0)
-        .attr('width', barWidth)
+        .attr('width', Math.max(1, barWidthPx))
         .attr('height', Math.max(0, innerHeight))
         .attr('fill', (d) => bidColorScale(d[1]))
-        .attr('opacity', 0.8);
+        .attr('opacity', 0.6);
 
       const askHeatmap = g.select('.heatmap-asks')
         .selectAll<SVGRectElement, PriceLevel>('rect')
-        .data(aggregatedAsks.slice(0, 25), (d) => `ask-${d[0]}`);
+        .data(aggregatedAsks, (d) => `ask-${d[0]}`);
 
       askHeatmap.exit().remove();
 
+      // Asks are rounded UP, so bucket 97660 contains orders from 97650.01-97660
+      // Bar should start at price - step and extend to price
       askHeatmap.enter()
         .append('rect')
         .merge(askHeatmap)
         .transition()
         .duration(150)
-        .attr('x', (d) => xScale(d[0]))
+        .attr('x', (d) => xScale(d[0] - priceStep))
         .attr('y', 0)
-        .attr('width', barWidth)
+        .attr('width', Math.max(1, barWidthPx))
         .attr('height', Math.max(0, innerHeight))
         .attr('fill', (d) => askColorScale(d[1]))
-        .attr('opacity', 0.8);
+        .attr('opacity', 0.6);
     } else {
       g.select('.heatmap-bids').selectAll('rect').remove();
       g.select('.heatmap-asks').selectAll('rect').remove();
@@ -345,7 +338,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         .attr('x2', xScale(midPrice))
         .attr('y1', 0)
         .attr('y2', innerHeight)
-        .attr('stroke', colorMid)
+        .attr('stroke', theme.colorMid)
         .attr('stroke-width', 2)
         .attr('stroke-dasharray', '4,4')
         .attr('opacity', 0.7);
@@ -356,7 +349,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         .attr('x', xScale(midPrice))
         .attr('y', -5)
         .attr('text-anchor', 'middle')
-        .attr('fill', colorMid)
+        .attr('fill', theme.colorMid)
         .attr('font-size', '12px')
         .attr('font-weight', 'bold')
         .text(`$${midPrice.toFixed(2)}`);
@@ -370,7 +363,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         .attr('x2', xScale(pinnedPrice))
         .attr('y1', 0)
         .attr('y2', innerHeight)
-        .attr('stroke', colorSecondary)
+        .attr('stroke', theme.colorSecondary)
         .attr('stroke-width', 2)
         .attr('stroke-dasharray', '2,2')
         .attr('opacity', 0.8);
@@ -381,7 +374,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
         .attr('x', xScale(pinnedPrice))
         .attr('y', innerHeight + 15)
         .attr('text-anchor', 'middle')
-        .attr('fill', colorSecondary)
+        .attr('fill', theme.colorSecondary)
         .attr('font-size', '11px')
         .attr('font-weight', 'bold')
         .text(`$${pinnedPrice.toFixed(2)}`);
@@ -401,12 +394,12 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
     g.select('.x-axis')
       .selectAll('text')
-      .attr('fill', textSecondary)
+      .attr('fill', theme.textSecondary)
       .attr('font-size', '11px');
 
     g.select('.x-axis')
       .selectAll('line, path')
-      .attr('stroke', surfaceBorder);
+      .attr('stroke', theme.surfaceBorder);
 
     g.select<SVGGElement>('.y-axis')
       .transition()
@@ -415,18 +408,18 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
 
     g.select('.y-axis')
       .selectAll('text')
-      .attr('fill', textSecondary)
+      .attr('fill', theme.textSecondary)
       .attr('font-size', '11px');
 
     g.select('.y-axis')
       .selectAll('line, path')
-      .attr('stroke', surfaceBorder);
+      .attr('stroke', theme.surfaceBorder);
 
     g.select('.x-label')
       .attr('x', innerWidth / 2)
       .attr('y', innerHeight + 35)
       .attr('text-anchor', 'middle')
-      .attr('fill', textTertiary)
+      .attr('fill', theme.textTertiary)
       .attr('font-size', '12px')
       .text('Price (USD)');
 
@@ -435,18 +428,12 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
       .attr('x', -innerHeight / 2)
       .attr('y', -45)
       .attr('text-anchor', 'middle')
-      .attr('fill', textTertiary)
+      .attr('fill', theme.textTertiary)
       .attr('font-size', '12px')
       .text('Cumulative Volume (BTC)');
 
     // Render event highlights
     const highlightsGroup = g.select('.event-highlights');
-
-    // Stop any existing pulse animation before clearing
-    if (pulseAnimationRef.current) {
-      pulseAnimationRef.current.interrupt();
-      pulseAnimationRef.current = null;
-    }
     highlightsGroup.selectAll('*').interrupt();
     highlightsGroup.selectAll('*').remove(); // Clear previous highlights
 
@@ -564,7 +551,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
             .attr('x2', mouseX)
             .attr('y1', 0)
             .attr('y2', innerHeight)
-            .attr('stroke', surfaceBorder)
+            .attr('stroke', theme.surfaceBorder)
             .attr('stroke-width', 1)
             .attr('stroke-dasharray', '3,3')
             .attr('opacity', 0.7);
@@ -574,7 +561,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
             .attr('x2', innerWidth)
             .attr('y1', mouseY)
             .attr('y2', mouseY)
-            .attr('stroke', surfaceBorder)
+            .attr('stroke', theme.surfaceBorder)
             .attr('stroke-width', 1)
             .attr('stroke-dasharray', '3,3')
             .attr('opacity', 0.7);
@@ -644,8 +631,8 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
       event.preventDefault();
       const delta = event.deltaY;
       setZoomLevel((prev) => {
-        const newZoom = delta > 0 ? prev / 1.1 : prev * 1.1;
-        return Math.max(0.5, Math.min(10, newZoom));
+        const newZoom = delta > 0 ? prev / ZOOM_CONFIG.wheelStep : prev * ZOOM_CONFIG.wheelStep;
+        return Math.max(ZOOM_CONFIG.min, Math.min(ZOOM_CONFIG.max, newZoom));
       });
     };
 
@@ -662,12 +649,6 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
       if (animationFrame.current) {
         cancelAnimationFrame(animationFrame.current);
         animationFrame.current = null;
-      }
-
-      // Stop pulse animation
-      if (pulseAnimationRef.current) {
-        pulseAnimationRef.current.interrupt();
-        pulseAnimationRef.current = null;
       }
 
       // Remove all event listeners and interrupt transitions
@@ -692,11 +673,11 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
   }, []);
 
   const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(10, prev * 1.2));
+    setZoomLevel((prev) => Math.min(ZOOM_CONFIG.max, prev * ZOOM_CONFIG.step));
   }
 
   const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(0.5, prev / 1.2));
+    setZoomLevel((prev) => Math.max(ZOOM_CONFIG.min, prev / ZOOM_CONFIG.step));
   }
 
   const handleResetZoom = () => {
@@ -736,6 +717,24 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
             </TooltipTrigger>
             <TooltipContent side="left">Zoom Out</TooltipContent>
           </Tooltip>
+
+          <div className="w-px h-4 my-auto bg-white/20 mx-1" />
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={showHeatmap ? "default" : "ghost"}
+                size="icon-sm"
+                onClick={() => setShowHeatmap(!showHeatmap)}
+                className={showHeatmap ? "bg-white/20" : ""}
+              >
+                <Layers className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              {showHeatmap ? "Hide Heatmap" : "Show Heatmap"}
+            </TooltipContent>
+          </Tooltip>
         </Card>
 
         {pinnedPrice !== null && (
@@ -745,7 +744,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
                   variant="secondary"
                   size="sm"
                   onClick={() => setPinnedPrice(null)}
-                  className="text-xs w-full bg-purple-500/20 border-purple-500/40 text-purple-300 hover:bg-purple-500/30"
+                  className="text-xs w-full justify-start bg-purple-500/20 border-purple-500/40 text-purple-300 hover:bg-purple-500/30"
                 >
                   <X className="size-3 mr-1" />
                   Clear Pin
@@ -762,7 +761,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
                   variant="secondary"
                   size="sm"
                   onClick={() => useEventsStore.getState().selectEvent(null)}
-                  className="text-xs w-full bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
+                  className="text-xs w-full justify-start bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
                 >
                   <X className="size-3 mr-1" />
                   Clear Event
@@ -844,11 +843,7 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
                 {getEventDescription(selectedEvent.type, selectedEvent.details)}
               </div>
               <div className="text-xs font-mono text-[var(--text-tertiary)]">
-                {new Date(selectedEvent.timestamp).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })}
+                {formatTime(selectedEvent.timestamp)}
               </div>
             </div>
           </Card>
@@ -856,18 +851,6 @@ const DepthChart = ({ bids, asks, midPrice, spread, showHeatmap = false }: Depth
       })()}
     </div>
   )
-}
-
-function calculateDepth(levels: PriceLevel[]): DepthPoint[] {
-  let cumulative = 0;
-  const depth: DepthPoint[] = [];
-
-  for (const [price, volume] of levels) {
-    cumulative += volume;
-    depth.push({ price, cumulative });
-  }
-
-  return depth;
 }
 
 export default DepthChart;

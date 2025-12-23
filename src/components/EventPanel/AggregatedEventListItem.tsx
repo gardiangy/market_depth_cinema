@@ -6,15 +6,25 @@
  * Clickable to jump to the first event's timestamp.
  */
 
-import { memo } from 'react'
+import { memo, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import type { AggregatedEvent } from '../../types'
 import { EventIcon } from './EventIcon'
 import { EVENT_METADATA } from '../../lib/eventDetectionConfig'
 import { useEventsStore } from '../../stores/eventsStore'
 import { usePlaybackStore } from '../../stores/playbackStore'
+import { formatTime } from '@/lib/formatters'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+
+// Track seen event IDs to only animate new ones
+const seenEventIds = new Set<string>()
+
+// Clear seen events (call when events are cleared)
+export function clearSeenEvents() {
+  seenEventIds.clear()
+}
 
 interface AggregatedEventListItemProps {
   event: AggregatedEvent
@@ -31,21 +41,20 @@ export const AggregatedEventListItem = memo(function AggregatedEventListItem({
   const isSelected = event.events.some((e) => e.id === selectedEventId)
   const metadata = EVENT_METADATA[event.type]
 
+  // Track if this is a new event (not seen before)
+  const isNewRef = useRef(!seenEventIds.has(event.id))
+
+  // Mark as seen after first render
+  useEffect(() => {
+    seenEventIds.add(event.id)
+  }, [event.id])
+
   const handleClick = () => {
     // Select the first event in the group and jump to its timestamp
     const firstEvent = event.events[0]
     useEventsStore.getState().selectEvent(firstEvent.id)
     usePlaybackStore.getState().setCurrentTimestamp(firstEvent.timestamp)
     usePlaybackStore.getState().pause()
-  }
-
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp)
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
   }
 
   // Generate aggregated description
@@ -172,9 +181,18 @@ export const AggregatedEventListItem = memo(function AggregatedEventListItem({
   }
 
   return (
-    <button
+    <motion.button
       onClick={handleClick}
-      className="w-full text-left transition-transform duration-150 hover:scale-[1.01] active:scale-[0.99]"
+      className="w-full text-left"
+      initial={isNewRef.current ? { opacity: 0, x: -20 } : false}
+      animate={{ opacity: 1, x: 0 }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{
+        type: 'spring',
+        stiffness: 400,
+        damping: 25,
+      }}
     >
       <Card
         variant="flat"
@@ -226,6 +244,6 @@ export const AggregatedEventListItem = memo(function AggregatedEventListItem({
           </div>
         </div>
       </Card>
-    </button>
+    </motion.button>
   )
 })

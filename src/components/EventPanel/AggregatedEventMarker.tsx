@@ -10,6 +10,7 @@ import type { AggregatedTimelineMarker, EventSeverity } from '../../types'
 import { EVENT_METADATA } from '../../lib/eventDetectionConfig'
 import { useEventsStore } from '../../stores/eventsStore'
 import { usePlaybackStore } from '../../stores/playbackStore'
+import { formatTime } from '@/lib/formatters'
 import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
@@ -46,15 +47,6 @@ export const AggregatedEventMarker = memo(function AggregatedEventMarker({
     useEventsStore.getState().selectEvent(firstEvent.id)
     usePlaybackStore.getState().setCurrentTimestamp(firstEvent.timestamp)
     usePlaybackStore.getState().pause()
-  }
-
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp)
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
   }
 
   // Get summary of event types in this cluster

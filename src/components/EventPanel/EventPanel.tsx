@@ -12,7 +12,7 @@ import { List } from 'react-window'
 import { Eye, Filter } from 'lucide-react'
 import { useEventsStore } from '../../stores/eventsStore'
 import { EventFilter } from './EventFilter'
-import { AggregatedEventListItem } from './AggregatedEventListItem'
+import { AggregatedEventListItem, clearSeenEvents } from './AggregatedEventListItem'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -85,7 +85,7 @@ function EventRow(props: {
   const event = events[index]
   return (
     <div style={style} className="px-2 py-1">
-      <AggregatedEventListItem event={event} />
+      <AggregatedEventListItem key={event.id} event={event} />
     </div>
   )
 }
@@ -164,7 +164,10 @@ export function EventPanel() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={clearEvents}
+              onClick={() => {
+                clearEvents()
+                clearSeenEvents()
+              }}
               className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
             >
               Clear

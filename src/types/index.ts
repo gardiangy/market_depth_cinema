@@ -1,5 +1,11 @@
 export type PriceLevel = [price: number, volume: number];
 
+// Depth point for cumulative depth chart visualization
+export interface DepthPoint {
+  price: number;
+  cumulative: number;
+}
+
 export interface OrderbookSnapshot {
   timestamp: number;
   bids: PriceLevel[];

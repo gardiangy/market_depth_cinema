@@ -174,14 +174,6 @@ const SpreadIndicator = ({ spread, midPrice }: { spread: number; midPrice: numbe
 
   return (
     <div className="relative py-3 px-3 bg-[var(--surface-1)]/50">
-      {/* CSS animation keyframes */}
-      <style>{`
-        @keyframes flash-pulse {
-          0% { transform: scale(1.08); }
-          100% { transform: scale(1); }
-        }
-      `}</style>
-
       {/* Divider line with glow */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-gradient-to-r from-transparent via-[var(--color-mid)] to-transparent opacity-30" />
 

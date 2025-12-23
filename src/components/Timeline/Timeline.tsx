@@ -5,6 +5,7 @@ import { useEventsStore } from '../../stores/eventsStore';
 import { AggregatedEventMarker } from '../EventPanel/AggregatedEventMarker';
 import { Button } from '@/components/ui/button';
 import { ChevronsRight } from 'lucide-react';
+import { formatTime, formatRelativeTime, formatDuration } from '@/lib/formatters';
 import type { DetectedEvent, AggregatedTimelineMarker, EventSeverity } from '../../types';
 
 interface TimelineProps {
@@ -206,46 +207,6 @@ export const Timeline = ({ showEventMarkers = true }: TimelineProps) => {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging, setCurrentTimestamp]);
-
-  // Format time for display
-  const formatTime = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
-  };
-
-  // Format relative time (e.g., "2m ago")
-  const formatRelativeTime = (timestamp: number): string => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m ago`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds % 60}s ago`;
-    } else {
-      return `${seconds}s ago`;
-    }
-  };
-
-  // Format duration
-  const formatDuration = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  };
 
   const positionPercentage = getPositionPercentage();
 

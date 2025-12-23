@@ -85,18 +85,6 @@ body::before {
   }
 }
 
-/* Pulse animation for live indicators */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0;
-    transform: scale(2);
-  }
-}
-
 /* Live indicator pulse - expands outward and fades */
 @keyframes live-pulse {
   0% {
@@ -109,23 +97,7 @@ body::before {
   }
 }
 
-/* Pulse ring animation for event highlights (CSS-based, no memory leak) */
-@keyframes pulse-ring {
-  0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.6;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2);
-    opacity: 0;
-  }
-}
-
-.animate-pulse-ring {
-  animation: pulse-ring 2s ease-out infinite;
-}
-
-/* SVG-specific pulse animation (no translate - SVG uses cx/cy positioning) */
+/* SVG-specific pulse animation for event highlights (CSS-based, no memory leak) */
 @keyframes svg-pulse-ring {
   0% {
     transform: scale(1);
@@ -211,16 +183,14 @@ body::before {
 button,
 a,
 [role="button"],
-[role="link"],
-.clickable {
+[role="link"] {
   cursor: pointer;
 }
 
 /* Disabled elements - not-allowed cursor */
 button:disabled,
 a[aria-disabled="true"],
-[role="button"][aria-disabled="true"],
-.disabled {
+[role="button"][aria-disabled="true"] {
   cursor: not-allowed;
 }
 
@@ -236,22 +206,8 @@ textarea {
 }
 
 /* Draggable elements - move cursor */
-[draggable="true"],
-.draggable {
+[draggable="true"] {
   cursor: move;
-}
-
-/* Resizable elements - various resize cursors */
-.resize-x {
-  cursor: ew-resize;
-}
-
-.resize-y {
-  cursor: ns-resize;
-}
-
-.resize-both {
-  cursor: nwse-resize;
 }
 
 
@@ -317,23 +273,7 @@ textarea {
   transition: opacity var(--transition-base) var(--ease-out);
 }
 
-/* ==========================================
-   PERFORMANCE OPTIMIZATIONS
-   ========================================== */
-
-/**
- * GPU acceleration for frequently animated elements.
- * Use sparingly and remove will-change after animation completes.
- */
-.will-change-transform {
-  will-change: transform;
-}
-
-.will-change-opacity {
-  will-change: opacity;
-}
-
-/* Remove will-change after hover/animation ends to free GPU resources */
-.glass-card:not(:hover) {
-  will-change: auto;
+@keyframes flash-pulse {
+  0% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { usePlaybackStore } from '../stores/playbackStore';
 import { useSnapshots } from '../contexts/SnapshotContext';
+import { formatShortDuration } from '@/lib/formatters';
 
 const PLAYBACK_TICK_INTERVAL = 50; // Update every 50ms for smooth playback
 
@@ -128,7 +129,7 @@ export const usePlayback = () => {
 
     return {
       durationMs: newDataMs,
-      durationFormatted: formatDuration(newDataMs),
+      durationFormatted: formatShortDuration(newDataMs),
     };
   }, [viewRange, availableRange]);
 
@@ -146,15 +147,3 @@ export const usePlayback = () => {
     newDataAvailable,
   };
 };
-
-// Helper to format duration
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
-  }
-  return `${seconds}s`;
-}
